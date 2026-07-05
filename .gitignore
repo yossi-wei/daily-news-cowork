@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────
+# Daily News Digest — .gitignore
+#
+# This repo ships the ENGINE and TEMPLATES only. Everything below is
+# either machine-generated, runtime state, or personal to one user and
+# is intentionally kept OUT of version control. The files still live on
+# disk locally so your own digest keeps running — they're just untracked.
+#
+# A new user runs the "setup-news-digest" skill (or copies the *.example
+# files by hand) to generate their own personal copies of the ignored
+# files below.
+# ─────────────────────────────────────────────────────────────
+
+# --- Generated output: daily digests & run logs ---
+*-news-digest.html
+*-run-log.md
+*-run-log-TEST.md
+*-news-digest-TEST.html
+
+# --- Personal config & state (created from the *.example templates) ---
+_pipeline/config.json
+news_feedback.md
+daily-topics.md
+story-history.json
+
+# --- Runtime state & locks ---
+_pipeline/state/
+_pipeline/.run.lock
+*.lock
+
+# --- Python bytecode ---
+__pycache__/
+*.py[cod]
+*.pyo
+
+# --- Local SKILL working copies & backups (repo ships canonical SKILL.md) ---
+SKILL.fixed.md
+_pipeline/SKILL.v1-monolith-backup.md
+_pipeline/SKILL.v2-prebuild-backup.md
+
+# --- Development scratch / one-off artifacts ---
+REWRITE-review-hardened.md
+*-before-after.html
+*-negotiations-digest.html
+
+# --- Personal dev notes (not part of the shipped engine) ---
+cowork_portability_best_practices.md
+
+# --- Scratch temp files ---
+*.tmp
+_deltest.tmp
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

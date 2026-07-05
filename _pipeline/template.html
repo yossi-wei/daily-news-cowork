@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__DIGEST_TITLE__ — __TITLE_DATE__</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: #f0ece4;
+    color: #1a1a1a;
+    line-height: 1.7;
+  }
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f2940 100%);
+    color: #fff;
+    padding: 36px 48px 28px;
+    border-bottom: 4px solid #f59e0b;
+  }
+  .header-date {
+    font-family: 'Arial', sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 8px;
+  }
+  .header h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+  .header h1 span { color: #f59e0b; }
+  .header-sub {
+    font-family: 'Arial', sans-serif;
+    font-size: 0.82rem;
+    color: #94a3b8;
+  }
+  /* INTRO */
+  .intro-wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 28px 24px 0;
+  }
+  .intro {
+    background: #fff;
+    border-left: 5px solid #f59e0b;
+    border-radius: 0 8px 8px 0;
+    padding: 18px 22px;
+    font-size: 1.0rem;
+    color: #374151;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    margin-bottom: 0;
+  }
+  .intro strong { color: #0f172a; }
+  /* MAIN CONTENT */
+  .content {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 24px 24px 40px;
+  }
+  /* STORY CARD */
+  .story-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+    margin-bottom: 32px;
+    overflow: hidden;
+    border-top: 4px solid #ddd;
+  }
+  /* Per-category card + badge colors are injected here from config.category_colors. */
+  __CATEGORY_CSS__
+  .story-header {
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-block;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .update-badge {
+    display: inline-block;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: #fef3c7;
+    color: #92400e;
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid #fcd34d;
+    margin-top: 2px;
+  }
+  .story-headline {
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #0f172a;
+    margin: 10px 24px 0;
+  }
+  /* SOURCE BAR */
+  .source-bar {
+    padding: 10px 24px;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.72rem;
+    color: #64748b;
+    border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
+  }
+  .source-bar strong { color: #475569; }
+  .source-tag {
+    display: inline-block;
+    background: #e2e8f0;
+    color: #334155;
+    padding: 1px 7px;
+    border-radius: 3px;
+    margin: 1px 2px;
+    font-size: 0.68rem;
+  }
+  /* ARTICLE BODY */
+  .story-body {
+    padding: 18px 24px 20px;
+    font-size: 0.97rem;
+    color: #1e293b;
+  }
+  .story-body p { margin-bottom: 13px; }
+  .story-body p:last-child { margin-bottom: 0; }
+  /* DIVERGENCE WATCH */
+  .divergence {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1.5px solid #f59e0b;
+    border-left: 5px solid #d97706;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 16px 24px 18px;
+    font-size: 0.88rem;
+    color: #78350f;
+    line-height: 1.5;
+  }
+  .divergence-label {
+    font-family: 'Arial', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #b45309;
+    margin-bottom: 6px;
+  }
+  /* REGIONAL PERSPECTIVE */
+  .regional {
+    background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
+    border: 1.5px solid #06b6d4;
+    border-left: 5px solid #0891b2;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 0 24px 18px;
+    font-size: 0.88rem;
+    color: #164e63;
+    line-height: 1.5;
+  }
+  .regional-label {
+    font-family: 'Arial', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #0e7490;
+    margin-bottom: 6px;
+  }
+  .regional .outlet {
+    font-weight: 700;
+    color: #164e63;
+  }
+  .regional .region-tag {
+    display: inline-block;
+    background: #0891b2;
+    color: #ecfeff;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 1px 7px;
+    border-radius: 3px;
+    margin-right: 4px;
+    vertical-align: 1px;
+  }
+  /* FOOTER */
+  .footer {
+    max-width: 820px;
+    margin: 0 auto 48px;
+    padding: 0 24px;
+  }
+  .footer-card {
+    background: #1e293b;
+    color: #94a3b8;
+    border-radius: 10px;
+    padding: 20px 24px;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.78rem;
+    line-height: 1.8;
+  }
+  .footer-card h3 {
+    color: #f59e0b;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .footer-sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .footer-source {
+    background: #334155;
+    color: #cbd5e1;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+  }
+  .story-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #0f172a;
+    color: #f59e0b;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .story-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  hr.divider {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 0 24px 0;
+  }
+  /* ===== FEEDBACK UI ===== */
+  .feedback-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 24px 14px;
+    border-top: 1px solid #f1f5f9;
+    background: #fafbfc;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+  .feedback-bar .prompt { margin-right: auto; color: #94a3b8; font-style: italic; }
+  .feedback-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .feedback-btn.down:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+  }
+  .feedback-btn.down.active {
+    background: #fef2f2;
+    border-color: #dc2626;
+    color: #b91c1c;
+  }
+  .feedback-btn.up:hover {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #15803d;
+  }
+  .feedback-btn.up.active {
+    background: #f0fdf4;
+    border-color: #16a34a;
+    color: #15803d;
+  }
+  .feedback-panel {
+    display: none;
+    padding: 14px 24px 18px;
+    background: #fafbfc;
+    border-top: 1px solid #f1f5f9;
+  }
+  .feedback-panel.open { display: block; }
+  .feedback-panel label {
+    display: block;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+  }
+  .feedback-panel textarea {
+    width: 100%;
+    min-height: 72px;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-family: 'Georgia', serif;
+    font-size: 0.92rem;
+    color: #1e293b;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  .feedback-panel textarea:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  }
+  .feedback-panel .hint {
+    font-family: 'Arial', sans-serif;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .feedback-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+  .feedback-actions button {
+    font-family: 'Arial', sans-serif;
+    font-size: 0.78rem;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .feedback-actions .cancel {
+    background: #fff;
+    border-color: #e2e8f0;
+    color: #64748b;
+  }
+  .feedback-actions .cancel:hover { background: #f1f5f9; }
+  .feedback-actions .submit {
+    background: #0f172a;
+    color: #f59e0b;
+    font-weight: 600;
+  }
+  .feedback-actions .submit:hover { background: #1e293b; }
+  .feedback-actions .submit:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .feedback-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(30px);
+    background: #0f172a;
+    color: #fff;
+    padding: 14px 22px;
+    border-radius: 8px;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.88rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 1000;
+    max-width: 540px;
+    line-height: 1.5;
+    border-left: 4px solid #f59e0b;
+  }
+  .feedback-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+  .feedback-toast strong { color: #f59e0b; }
+  .feedback-toast code {
+    display: block;
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 0.74rem;
+    margin-top: 8px;
+    max-height: 120px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+  .feedback-bar .sent {
+    color: #059669;
+    font-weight: 600;
+  }
+
+  /* Category card/badge colors (incl. real-estate, oyr, wildcard) are injected from
+     config.category_colors via __CATEGORY_CSS__ above. Only structural layout for the
+     On Your Radar and Wild Card sections is kept here. */
+
+  /* ON YOUR RADAR */
+  .oyr-section { max-width: 820px; margin: 0 auto; padding: 0 24px 0; }
+  .oyr-header { font-family: 'Arial', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #475569; padding: 20px 0 10px; border-top: 2px solid #e2e8f0; }
+
+  /* WILD CARD (daily finance pick) */
+  .wildcard-section { margin-top: 8px; }
+  .wildcard-header { font-family: 'Arial', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #0d9488; padding: 20px 0 10px; border-top: 2px solid #99f6e4; }
+
+  /* TABLE OF CONTENTS */
+  .intro-framing { margin-bottom: 14px; font-size: 1.0rem; color: #374151; line-height: 1.7; }
+  .toc { border-top: 1px solid #e2e8f0; padding-top: 12px; display: flex; flex-direction: column; gap: 2px; }
+  .toc-entry { display: flex; align-items: center; gap: 10px; padding: 5px 4px; border-radius: 6px; text-decoration: none; color: inherit; transition: background 0.12s; }
+  .toc-entry:hover { background: #f8fafc; }
+  .toc-num { flex-shrink: 0; width: 22px; height: 22px; font-size: 0.68rem; }
+  .toc-hook { font-family: 'Georgia', 'Times New Roman', serif; font-size: 0.88rem; color: #374151; line-height: 1.3; flex: 1; }
+  .toc-entry:hover .toc-hook { color: #0f172a; }
+
+  /* STATE WATCH */
+  .state-watch { background: linear-gradient(135deg, #fdf8f0 0%, #fef0dc 100%); border: 1.5px solid #d97706; border-left: 5px solid #92400e; border-radius: 6px; padding: 14px 16px; margin: 0 24px 18px; font-size: 0.88rem; color: #431407; line-height: 1.5; }
+  .state-watch-label { font-family: 'Arial', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #92400e; margin-bottom: 6px; }
+  .state-watch .state-tag { display: inline-block; background: #92400e; color: #fef3c7; font-family: 'Arial', sans-serif; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; padding: 1px 7px; border-radius: 3px; margin-right: 4px; vertical-align: 1px; }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="header-date">__HEADER_DATE__</div>
+  <h1>__DIGEST_TITLE_HTML__</h1>
+  <div class="header-sub">__HEADER_SUB__</div>
+</div>
+
+<!-- ===== INTRO + TOC ===== -->
+<div class="intro-wrap">
+  <div class="intro">
+    <p class="intro-framing">__INTRO_FRAMING__</p>
+    <nav class="toc" aria-label="Today's stories">
+__TOC__
+    </nav>
+  </div>
+</div>
+
+__OYR_SECTION__
+<!-- ===== STORIES ===== -->
+<div class="content">
+
+__STORIES__
+</div><!-- /content -->
+
+<!-- ===== FOOTER ===== -->
+<div class="footer">
+  <div class="footer-card">
+    <h3>Sources consulted today</h3>
+    <div class="footer-sources">
+__FOOTER_SOURCES__
+    </div>
+  </div>
+</div>
+
+<div class="feedback-toast" id="fbToast" role="status" aria-live="polite"></div>
+
+<!-- ===== FEEDBACK UI WIRING ===== -->
+<script>
+(function () {
+  var DIGEST_DATE = '__DIGEST_DATE__';
+  var FEEDBACK_FILE = 'news_feedback.md';  // resolved inside your Daily News project folder
+
+  function firstParagraph(card) {
+    var p = card.querySelector('.story-body p');
+    return p ? p.textContent.trim() : '';
+  }
+
+  function headline(card) {
+    var h = card.querySelector('.story-headline');
+    return h ? h.textContent.trim() : '(no headline)';
+  }
+
+  function truncate(s, n) {
+    s = s.replace(/\s+/g, ' ').trim();
+    return s.length > n ? s.slice(0, n).trim() + '…' : s;
+  }
+
+  function buildPrompt(card, feedbackText, kind) {
+    var h = headline(card);
+    var cat = card.getAttribute('data-category') || 'Other';
+    var srcs = card.getAttribute('data-sources') || '';
+    var id = card.getAttribute('data-story-id') || '';
+    var excerpt = truncate(firstParagraph(card), 400);
+    var header = [
+      "Story ID: " + id,
+      "Headline: " + h,
+      "Category: " + cat,
+      "Sources: " + srcs,
+      "Excerpt: " + excerpt
+    ];
+    if (kind === 'up') {
+      return [
+        "I'm giving POSITIVE feedback (thumbs-up) on a story from my " + DIGEST_DATE + " daily digest. Please record it in my preferences file.",
+        ""
+      ].concat(header, [
+        "",
+        "My note (optional):",
+        feedbackText.trim() || "(no note — just more like this)",
+        "",
+        "Please:",
+        "1. Infer the general pattern that made this story a hit (topic, angle, altitude — not a one-off headline match).",
+        "2. Append a new entry to " + FEEDBACK_FILE + " under \"Liked stories (👍 history)\", using the template shown there (date, story, category, my words, pattern, status).",
+        "3. If it confirms an existing liked pattern, strengthen that entry (add the story + today's date) instead of duplicating it.",
+        "4. Keep it auditable — short, specific, and in my voice where reasonable. These entries steer daily story selection — especially the finance Wild Card — toward more of this."
+      ]).join("\n");
+    }
+    return [
+      "I'm giving feedback on a story from my " + DIGEST_DATE + " daily digest. Please analyze it and update my preferences file.",
+      ""
+    ].concat(header, [
+      "",
+      "My feedback:",
+      feedbackText.trim(),
+      "",
+      "Please:",
+      "1. Infer a concise, general rule from this feedback (not just a one-off filter — what pattern should you avoid going forward?).",
+      "2. Append a new entry to " + FEEDBACK_FILE + " under \"Active preferences\", using the template shown there (date, triggered-by, category, my words, rule, scope, status).",
+      "3. If this feedback contradicts or refines an existing active entry, mark the older one as superseded and move it to the retired section.",
+      "4. Keep it auditable — short, specific, and in my voice where reasonable."
+    ]).join("\n");
+  }
+
+  function showToast(html, stickyMs) {
+    var toast = document.getElementById('fbToast');
+    toast.innerHTML = html;
+    toast.classList.add('show');
+    if (toast._timer) clearTimeout(toast._timer);
+    toast._timer = setTimeout(function () {
+      toast.classList.remove('show');
+    }, stickyMs || 6000);
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        resolve();
+      } catch (e) { reject(e); }
+    });
+  }
+
+  function attachFeedback(card) {
+    if (card.querySelector('.feedback-bar')) return;
+
+    var bar = document.createElement('div');
+    bar.className = 'feedback-bar';
+    bar.innerHTML =
+      '<span class="prompt">Rate this story to tune future digests:</span>' +
+      '<button type="button" class="feedback-btn up" aria-expanded="false">' +
+        '<span aria-hidden="true">👍</span>' +
+        '<span>More like this</span>' +
+      '</button>' +
+      '<button type="button" class="feedback-btn down" aria-expanded="false">' +
+        '<span aria-hidden="true">👎</span>' +
+        '<span>Less like this</span>' +
+      '</button>';
+
+    var panel = document.createElement('div');
+    panel.className = 'feedback-panel';
+    panel.innerHTML =
+      '<label></label>' +
+      '<textarea></textarea>' +
+      '<div class="hint">Be as specific or general as you like. Claude will turn this into a durable preference in your feedback file.</div>' +
+      '<div class="feedback-actions">' +
+        '<button type="button" class="cancel">Cancel</button>' +
+        '<button type="button" class="submit" disabled>Copy feedback for Claude</button>' +
+      '</div>';
+
+    card.appendChild(bar);
+    card.appendChild(panel);
+
+    var btnUp = bar.querySelector('.feedback-btn.up');
+    var btnDown = bar.querySelector('.feedback-btn.down');
+    var label = panel.querySelector('label');
+    var textarea = panel.querySelector('textarea');
+    var submit = panel.querySelector('.submit');
+    var cancel = panel.querySelector('.cancel');
+    var mode = null; // 'up' | 'down'
+
+    function refreshSubmit() {
+      // 👎 needs a reason; 👍 note is optional.
+      submit.disabled = mode === 'down' && textarea.value.trim().length < 3;
+    }
+
+    function closePanel() {
+      panel.classList.remove('open');
+      [btnUp, btnDown].forEach(function (b) {
+        b.classList.remove('active');
+        b.setAttribute('aria-expanded', 'false');
+      });
+      mode = null;
+    }
+
+    function openPanel(kind) {
+      mode = kind;
+      panel.classList.add('open');
+      btnUp.classList.toggle('active', kind === 'up');
+      btnDown.classList.toggle('active', kind === 'down');
+      btnUp.setAttribute('aria-expanded', kind === 'up' ? 'true' : 'false');
+      btnDown.setAttribute('aria-expanded', kind === 'down' ? 'true' : 'false');
+      if (kind === 'up') {
+        label.textContent = 'Tell Claude what you liked (optional):';
+        textarea.placeholder = "e.g. Loved this — more market-structure stories like this in the wild card slot.";
+      } else {
+        label.textContent = 'Tell Claude why this story missed the mark:';
+        textarea.placeholder = "e.g. I don't care about tech-industry earnings unless they signal a major AI infrastructure shift.";
+      }
+      refreshSubmit();
+      setTimeout(function () { textarea.focus(); }, 50);
+    }
+
+    btnUp.addEventListener('click', function () {
+      mode === 'up' ? closePanel() : openPanel('up');
+    });
+    btnDown.addEventListener('click', function () {
+      mode === 'down' ? closePanel() : openPanel('down');
+    });
+
+    textarea.addEventListener('input', refreshSubmit);
+
+    cancel.addEventListener('click', closePanel);
+
+    submit.addEventListener('click', function () {
+      var text = textarea.value.trim();
+      if (mode === 'down' && text.length < 3) return;
+      var prompt = buildPrompt(card, text, mode);
+      copyToClipboard(prompt).then(function () {
+        showToast(
+          '<strong>Copied.</strong> Open a new Claude chat and paste this to save the preference.<br>' +
+          'Claude will append a dated entry to <code>news_feedback.md</code> that you can audit.',
+          9000
+        );
+        bar.innerHTML = '<span class="sent">✓ Feedback copied — paste into Claude to save it.</span>';
+        panel.classList.remove('open');
+      }, function (err) {
+        showToast(
+          '<strong>Could not auto-copy.</strong> Select the text below and copy it manually:' +
+          '<code>' + prompt.replace(/[&<>]/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]); }) + '</code>',
+          20000
+        );
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.story-card').forEach(attachFeedback);
+  });
+})();
+</script>
+
+</body>
+</html>
