@@ -305,6 +305,75 @@ class TestCardAndCssIntegration(unittest.TestCase):
         self.assertNotIn(".fb-track", bd.strip_figure_css(tpl))
 
 
+import validate_digest as vd  # noqa: E402
+
+BARS = ('<div class="fig-bars" role="img" aria-label="a chart">'
+        '<div class="fb-row"><span class="fb-track"></span></div></div>')
+LINE = ('<svg class="fig-line" role="img" aria-labelledby="t"><title id="t">x</title>'
+        '<polyline points="0,0 1,1"/></svg>')
+CSS = "/* FIGURE-CSS-START */ .fb-track { background: #f1f5f9; } /* FIGURE-CSS-END */"
+
+
+def page(*figs):
+    body = "".join(f'<figure class="story-figure">{f}</figure>' for f in figs)
+    return f"<style>{CSS if figs else ''}</style>{body}"
+
+
+class TestValidatorFigureGates(unittest.TestCase):
+    def test_clean_page_passes(self):
+        self.assertEqual(vd.check_figures(page(BARS, LINE), 2), [])
+
+    def test_no_figures_no_css_passes(self):
+        self.assertEqual(vd.check_figures(page(), 2), [])
+
+    def test_over_cap_fails(self):
+        problems = vd.check_figures(page(BARS, BARS, BARS), 2)
+        self.assertTrue(any("above the configured max_per_digest" in p for p in problems))
+
+    def test_img_tag_fails(self):
+        """Path B is entirely local; an <img> means a remote hotlink slipped in."""
+        html = page(BARS).replace("</figure>", '<img src="https://x/y.jpg"></figure>')
+        self.assertTrue(any("<img>" in p for p in vd.check_figures(html, 2)))
+
+    def test_img_tag_detected_case_insensitively(self):
+        html = page(BARS).replace("</figure>", '<IMG SRC="https://x/y.jpg"></figure>')
+        self.assertTrue(any("<img>" in p for p in vd.check_figures(html, 2)))
+
+    def test_bars_without_aria_label_fails(self):
+        html = page(BARS.replace(' aria-label="a chart"', ""))
+        self.assertTrue(any("aria-label" in p for p in vd.check_figures(html, 2)))
+
+    def test_bars_with_empty_aria_label_fails(self):
+        html = page(BARS.replace('aria-label="a chart"', 'aria-label=""'))
+        self.assertTrue(any("aria-label" in p for p in vd.check_figures(html, 2)))
+
+    def test_svg_without_role_fails(self):
+        html = page(LINE.replace(' role="img"', ""))
+        self.assertTrue(any('role="img"' in p for p in vd.check_figures(html, 2)))
+
+    def test_svg_with_empty_title_fails(self):
+        html = page(LINE.replace("<title id=\"t\">x</title>", '<title id="t"></title>'))
+        self.assertTrue(any("<title>" in p for p in vd.check_figures(html, 2)))
+
+    def test_figures_without_css_fails(self):
+        html = f"<style></style><figure class=\"story-figure\">{BARS}</figure>"
+        self.assertTrue(any("CSS block was stripped" in p
+                            for p in vd.check_figures(html, 2)))
+
+    def test_css_without_figures_fails(self):
+        """The strip is what keeps a figures-off digest byte-identical to a
+        pre-feature one, so leaving it in is a real regression."""
+        html = f"<style>{CSS}</style>"
+        self.assertTrue(any("should be stripped" in p
+                            for p in vd.check_figures(html, 2)))
+
+    def test_cap_read_from_config(self):
+        self.assertEqual(vd.load_figure_cap(dirname(HERE)), 2)
+
+    def test_cap_falls_back_when_config_unreadable(self):
+        self.assertEqual(vd.load_figure_cap("/nonexistent"), 2)
+
+
 class TestCarryFields(unittest.TestCase):
     def test_figure_and_urls_are_carried(self):
         """A field absent from CARRY_FIELDS is dropped between the agent return and

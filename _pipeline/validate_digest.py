@@ -61,6 +61,66 @@ def load_story_count(folder, cli_min=None, cli_max=None):
     return lo, hi, src
 
 
+def load_figure_cap(folder, default=2):
+    """config.figures.max_per_digest, or a conservative default if unreadable."""
+    try:
+        with open(os.path.join(folder, "_pipeline", "config.json"), encoding="utf-8") as fh:
+            cfg = json.load(fh)
+        cap = (cfg.get("figures") or {}).get("max_per_digest")
+        return int(cap) if isinstance(cap, int) else default
+    except Exception:
+        return default
+
+
+def check_figures(html, cap):
+    """Structural checks on rendered figures. Returns a list of problems.
+
+    These catch bugs in our own rendering rather than bad agent output -- a figure
+    the agent got wrong is already refused at build time and logged. Anything caught
+    here means the renderer or the cap logic misbehaved, which is worth failing a run
+    over."""
+    problems = []
+
+    figures = re.findall(r'<figure[^>]*class="[^"]*\bstory-figure\b[^"]*"', html)
+    if len(figures) > cap:
+        problems.append(f"{len(figures)} figures rendered, above the configured "
+                        f"max_per_digest of {cap}")
+
+    # Path B is entirely local: charts are HTML/SVG built from cited numbers. An <img>
+    # means a remote hotlink slipped in, which would leak the reader's IP to a third
+    # party on open and break when the URL rots.
+    imgs = re.findall(r"<img\b", html, re.I)
+    if imgs:
+        problems.append(f"{len(imgs)} <img> tag(s) in output; figures must be locally "
+                        f"rendered, never remote references")
+
+    # Accessible name on every figure. Bars are real text but the block is role="img",
+    # so it needs a label; the line chart is an SVG and needs a non-empty <title>.
+    for bar in re.findall(r'<div[^>]*class="[^"]*\bfig-bars\b[^"]*"[^>]*>', html):
+        if not re.search(r'aria-label="[^"]+"', bar):
+            problems.append("a fig-bars block has no non-empty aria-label")
+    for svg in re.findall(r"<svg\b.*?</svg>", html, re.S):
+        if 'role="img"' not in svg:
+            problems.append("an <svg> figure is missing role=\"img\"")
+        if not re.search(r"<title[^>]*>[^<]+</title>", svg):
+            problems.append("an <svg> figure has no non-empty <title>")
+
+    # Figure styling must be present exactly when a figure is. build_digest.py keeps or
+    # strips the whole marked block, and the markers survive into the output, so testing
+    # for the marker matches the actual mechanism -- sniffing for individual class names
+    # would pass a partially-mangled block.
+    has_css = "FIGURE-CSS-START" in html
+    if figures and not has_css:
+        problems.append("figures rendered but the figure CSS block was stripped")
+    if not figures and has_css:
+        problems.append("figure CSS present but no figure rendered (the block should be "
+                        "stripped so a figures-off digest stays byte-identical)")
+    if has_css and ".fb-track" not in html:
+        problems.append("figure CSS block present but incomplete (.fb-track missing)")
+
+    return problems
+
+
 def load_valid_categories(folder):
     """Return (valid_set, loaded_topics_bool) from config.topics + the special sections."""
     valid = set(SPECIAL_CATEGORIES)
@@ -134,6 +194,9 @@ def main():
         problems.append("feedback script DIGEST_DATE constant not found")
     elif m.group(1) != args.date:
         problems.append(f"DIGEST_DATE is {m.group(1)!r}, expected {args.date!r}")
+
+    # --- figures ---
+    problems.extend(check_figures(html, load_figure_cap(folder)))
 
     # --- unreplaced template placeholders ---
     strays = list(set(re.findall(r'__[A-Z_]{3,}__', html)))
