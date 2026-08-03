@@ -221,6 +221,70 @@ class TestRenderGeometry(unittest.TestCase):
         self.assertEqual(a, b)
 
 
+class TestSingleSourceStyling(unittest.TestCase):
+    """template.html owns every figure style rule. These guard against the copy
+    creeping back into Python, where it would silently drift from the digest."""
+
+    @staticmethod
+    def _read(name):
+        with open(join(dirname(abspath(__file__)), name), encoding="utf-8") as fh:
+            return fh.read()
+
+    def test_css_loads_from_template(self):
+        css = rc.load_figure_css()
+        self.assertIn(".fb-track", css)
+        self.assertIn(".fig-line .fl-ax", css)
+
+    def test_no_hardcoded_palette_in_module(self):
+        src = self._read("render_chart.py")
+        for hexcolor in ("#64748b", "#f1f5f9", "#1e293b", "#94a3b8"):
+            self.assertNotIn(hexcolor, src,
+                             f"{hexcolor} belongs in template.html, not the renderer")
+
+    def test_no_hardcoded_gutter_in_module(self):
+        self.assertNotIn("24px", self._read("render_chart.py"),
+                         "card gutter belongs in template.html")
+
+    def test_missing_template_degrades_quietly(self):
+        self.assertEqual(rc.load_figure_css("/nonexistent/path"), "")
+
+    def test_build_digest_and_renderer_extract_the_same_block(self):
+        sys.path.insert(0, dirname(abspath(__file__)))
+        import build_digest as bd
+        self.assertEqual(bd.extract_figure_css(self._read("template.html")),
+                         rc.load_figure_css())
+
+    def test_strip_removes_all_trace(self):
+        sys.path.insert(0, dirname(abspath(__file__)))
+        import build_digest as bd
+        stripped = bd.strip_figure_css(self._read("template.html"))
+        for token in ("FIGURE-CSS", ".fb-track", ".fig-caption", "story-figure"):
+            self.assertNotIn(token, stripped)
+
+
+class TestAspectRatio(unittest.TestCase):
+    def test_default_aspect_is_4_to_1(self):
+        markup, _ = rc.render_figure(fig(chart_type="line"), URLS)
+        self.assertIn('viewBox="0 0 720 180"', markup)
+
+    def test_aspect_configurable(self):
+        markup, _ = rc.render_figure(fig(chart_type="line"), URLS,
+                                     cfg={"aspect": 2.0})
+        self.assertIn('viewBox="0 0 720 360"', markup)
+
+    def test_zero_aspect_falls_back(self):
+        markup, _ = rc.render_figure(fig(chart_type="line"), URLS,
+                                     cfg={"aspect": 0})
+        self.assertIn('viewBox="0 0 720 180"', markup)
+
+    def test_viewbox_units_are_not_pixels(self):
+        """The svg must stay fluid: width 100% + preserveAspectRatio, never a fixed
+        pixel width that would need to agree with the card's layout."""
+        markup, _ = rc.render_figure(fig(chart_type="line"), URLS)
+        self.assertIn('width="100%"', markup)
+        self.assertIn("preserveAspectRatio", markup)
+
+
 class TestNumberFormatting(unittest.TestCase):
     def test_locale_neutral(self):
         self.assertEqual(rc.fmt(1234567.0), "1.23457e+06")

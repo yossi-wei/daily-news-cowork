@@ -161,6 +161,63 @@
     color: #b45309;
     margin-bottom: 6px;
   }
+  /* FIGURE-CSS-START */
+  /* FIGURES (optional data charts) — single source of truth for figure styling.
+     render_chart.py's standalone preview reads the rules between these markers
+     rather than carrying its own copy, so a preview can never drift from the digest.
+     build_digest.py strips this whole block when no figure rendered, which is why a
+     digest with figures disabled is byte-identical to one built before the feature
+     existed. Keep the 24px horizontal gutter aligned with .story-body's padding. */
+  .story-figure {
+    margin: 4px 24px 16px;
+  }
+  .fig-bars { font-size: 0.85rem; }
+  .fb-row {
+    display: grid;
+    grid-template-columns: minmax(64px, 22%) 1fr auto;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .fb-lab {
+    color: #64748b;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .fb-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+    height: 14px;
+  }
+  .fb-bar {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+  }
+  .fb-val {
+    color: #1e293b;
+    font-variant-numeric: tabular-nums;
+  }
+  .fb-unit {
+    color: #94a3b8;
+    font-size: 0.78rem;
+    margin-top: 6px;
+    text-align: right;
+  }
+  .fig-line { display: block; }
+  .fig-line .fl-ax { font-size: 11px; fill: #94a3b8; }
+  .fig-caption {
+    color: #64748b;
+    font-size: 0.82rem;
+    margin: 8px 0 0;
+    font-style: italic;
+  }
+  @media print {
+    .fb-bar, .fb-track { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  /* FIGURE-CSS-END */
   /* REGIONAL PERSPECTIVE */
   .regional {
     background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);

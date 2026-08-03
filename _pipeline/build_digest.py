@@ -167,6 +167,25 @@ def render_state_watch(story):
     )
 
 
+FIGURE_CSS_RE = re.compile(
+    r"[ \t]*/\* FIGURE-CSS-START \*/.*?/\* FIGURE-CSS-END \*/\n?",
+    re.S,
+)
+
+
+def extract_figure_css(template):
+    """Pull the figure style rules out of template.html. template.html is the single
+    source of truth for them; render_chart.py's preview reads the same markers."""
+    m = FIGURE_CSS_RE.search(template)
+    return m.group(0) if m else ""
+
+
+def strip_figure_css(template):
+    """Remove the figure style block. A digest with no figures then contains no trace
+    of the feature, which keeps pre-feature digests reproducible byte-for-byte."""
+    return FIGURE_CSS_RE.sub("", template, count=1)
+
+
 def render_card(story, number, date):
     cat = story["category"]
     slug = slug_for(cat)
@@ -265,6 +284,13 @@ def main():
 
     folder = resolve_folder(args.folder)
     template = open(os.path.join(folder, "_pipeline", "template.html"), encoding="utf-8").read()
+
+    # Figure CSS is defined once, in template.html, between FIGURE-CSS markers. Strip it
+    # when the digest contains no figure, so a build with figures off is byte-identical
+    # to one produced before the feature existed. Re-inserted below only if a figure
+    # actually rendered.
+    figure_css = extract_figure_css(template)
+    template = strip_figure_css(template)
 
     # Branding + topic list come from config.json so the digest adapts to whoever
     # owns it. Fall back gracefully so a missing/broken config never aborts a build.

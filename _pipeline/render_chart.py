@@ -26,13 +26,50 @@ import argparse
 import html
 import json
 import math
+import os
+import re
 import sys
 from urllib.parse import urlparse
 
-DEFAULTS = {"min_points": 4, "max_points": 24, "max_label_chars": 18}
+# --- Line-chart coordinate space -------------------------------------------------
+# These are viewBox units, NOT pixels. The <svg> carries width="100%" and
+# preserveAspectRatio, so the rendered width is whatever CSS gives it and these
+# values never need to agree with any HTML dimension. What they do control is the
+# aspect ratio, which is an editorial property rather than a layout one: a wide,
+# short chart flattens slopes and a taller one exaggerates them. That is why
+# `aspect` is exposed through config while the rest stay fixed.
+VIEW_W = 720.0                 # coordinate-space width; only meaningful vs VIEW_H
+DEFAULT_ASPECT = 4.0           # VIEW_W / VIEW_H — 4:1 reads honestly at card width
+LINE_INSET = 28.0              # padding for the endpoint/extreme labels, in view units
+AXIS_FONT_PX = 11              # must match .fig-line .fl-ax in template.html
+
+DEFAULTS = {
+    "min_points": 4,
+    "max_points": 24,
+    "max_label_chars": 18,
+    "aspect": DEFAULT_ASPECT,
+}
 
 # Fallback only; real colors come from config.category_colors via build_digest.py.
 FALLBACK_COLOR = "#2563eb"
+
+FIGURE_CSS_RE = re.compile(
+    r"[ \t]*/\* FIGURE-CSS-START \*/.*?/\* FIGURE-CSS-END \*/\n?", re.S)
+
+
+def load_figure_css(folder=None):
+    """Read the figure style rules out of template.html, which is their single source
+    of truth. Used only by the standalone preview -- the digest itself gets them from
+    build_digest.py, which reads the same markers. Returns '' if the template cannot
+    be found, so the preview degrades to unstyled rather than failing."""
+    if folder is None:
+        folder = os.path.dirname(os.path.abspath(__file__))
+    try:
+        with open(os.path.join(folder, "template.html"), encoding="utf-8") as fh:
+            m = FIGURE_CSS_RE.search(fh.read())
+        return m.group(0) if m else ""
+    except OSError:
+        return ""
 
 
 def url_key(url):
@@ -156,10 +193,12 @@ def render_bar(figure, color=FALLBACK_COLOR):
     )
 
 
-def render_line(figure, color=FALLBACK_COLOR, uid="fig"):
+def render_line(figure, color=FALLBACK_COLOR, uid="fig", cfg=None):
     labels, values, unit = _parts(figure)
     e = html.escape
-    W, H, P = 720.0, 180.0, 28.0
+    aspect = (cfg or {}).get("aspect", DEFAULT_ASPECT) or DEFAULT_ASPECT
+    W, P = VIEW_W, LINE_INSET
+    H = round(VIEW_W / float(aspect), 2)
     lo, hi = min(values), max(values)
     span = (hi - lo) or 1.0
     n = len(values)
@@ -196,7 +235,7 @@ def render_figure(figure, story_urls=(), color=FALLBACK_COLOR, cfg=None, uid="fi
             return None, reason
         caption = figure.get("caption")
         body = (render_bar(figure, color) if figure["chart_type"] == "bar"
-                else render_line(figure, color, uid))
+                else render_line(figure, color, uid, {**DEFAULTS, **(cfg or {})}))
         if isinstance(caption, str) and caption.strip():
             body += f'\n    <p class="fig-caption">{html.escape(caption.strip())}</p>'
         return f'    <figure class="story-figure">\n{body}\n    </figure>', None
@@ -231,7 +270,7 @@ def main():
         "background:#f8fafc;margin:0;padding:32px}\n"
         ".card{background:#fff;border-radius:8px;padding:8px 0;max-width:760px;margin:0 auto;"
         "box-shadow:0 1px 3px rgba(0,0,0,.08)}\n"
-        + FIGURE_CSS +
+        + load_figure_css() +
         "</style>\n<div class='card'>\n" + markup + "\n</div>\n"
     )
     if args.out:
@@ -240,23 +279,6 @@ def main():
     else:
         sys.stdout.write(page)
 
-
-# Kept here so the standalone preview matches the digest exactly. build_digest.py
-# injects the same block into template.html.
-FIGURE_CSS = """
-.story-figure{margin:4px 24px 16px}
-.fig-bars{font-size:.85rem}
-.fb-row{display:grid;grid-template-columns:minmax(64px,22%) 1fr auto;align-items:center;gap:8px;margin-bottom:5px}
-.fb-lab{color:#64748b;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fb-track{background:#f1f5f9;border-radius:3px;height:14px}
-.fb-bar{display:block;height:100%;border-radius:3px}
-.fb-val{color:#1e293b;font-variant-numeric:tabular-nums}
-.fb-unit{color:#94a3b8;font-size:.78rem;margin-top:6px;text-align:right}
-.fig-line{display:block}
-.fig-line .fl-ax{font-size:11px;fill:#94a3b8}
-.fig-caption{color:#64748b;font-size:.82rem;margin:8px 0 0;font-style:italic}
-@media print{.fb-bar,.fb-track{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-"""
 
 if __name__ == "__main__":
     main()
