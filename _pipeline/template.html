@@ -546,7 +546,7 @@ __FOOTER_SOURCES__
 <script>
 (function () {
   var DIGEST_DATE = '__DIGEST_DATE__';
-  var FEEDBACK_FILE = 'news_feedback.md';  // resolved inside your Daily News project folder
+  var FEEDBACK_FILE = '__FEEDBACK_FILE__';  // from config.feedback_filename; resolved inside your project folder
 
   function firstParagraph(card) {
     var p = card.querySelector('.story-body p');
@@ -725,7 +725,7 @@ __FOOTER_SOURCES__
       copyToClipboard(prompt).then(function () {
         showToast(
           '<strong>Copied.</strong> Open a new Claude chat and paste this to save the preference.<br>' +
-          'Claude will append a dated entry to <code>news_feedback.md</code> that you can audit.',
+          'Claude will append a dated entry to <code>' + FEEDBACK_FILE + '</code> that you can audit.',
           9000
         );
         bar.innerHTML = '<span class="sent">✓ Feedback copied — paste into Claude to save it.</span>';

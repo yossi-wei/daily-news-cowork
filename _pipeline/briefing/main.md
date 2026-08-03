@@ -104,9 +104,18 @@ overnight events spanning two calendar dates, write "night of [date]–[date+1]"
 include the local-time peak (e.g. "peaked at 01:09 local time, night of the 3rd–4th").
 Never leave a raw UTC time as the only time reference in published text.
 
-**Write your full return as JSON to this exact file (use the Write tool):**
+**Write your full return as JSON to this file (use the Write tool):**
 
 `__RETURN_PATH__`
+
+If that directory does not exist — which happens when a retry runs in a different
+session from the one that wrote this briefing, giving the project folder a different
+absolute path — do **not** create it and do **not** give up. Resolve the destination
+**relative to this briefing file instead**: replace the `prompts/` segment of the path
+you read this file from with `returns/`, and use `__RETURN_FILENAME__` as the filename.
+Reading this file at `<any>/state/__DATE__/prompts/__TOPIC_SLUG__.md` therefore means
+writing to `<any>/state/__DATE__/returns/__RETURN_FILENAME__`. The relative rule is
+authoritative; the absolute path above is a convenience for the common case.
 
 JSON shape (write exactly this structure):
 
@@ -131,7 +140,7 @@ JSON shape (write exactly this structure):
       "confidence": "one-line sourcing note (esp. forward-looking/single-source) or null",
       "regional": [{"region": "string", "outlet": "string", "text": "string"}],
       "divergence": "one-paragraph note or null",
-      "state_watch": [{"state": "IL|IN|NH|TN|GA", "text": "string"}]
+      "state_watch": [{"state": "__FOCUS_STATES__", "text": "string"}]
     }
   ]
 }
