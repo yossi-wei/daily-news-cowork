@@ -232,8 +232,14 @@ python3 "$PROJECT/_pipeline/validate_digest.py" \
   --date $(date +%F)
 ```
 Validation checks the regular-card count against `config.story_count` (OYR + wild card
-excluded, max 1 wild card), TOC anchors, category values, the feedback script, and
-`DIGEST_DATE`. **If it fails, fix the selection/stories JSON and re-run assemble +
+excluded, max 1 wild card), TOC anchors, category values, the feedback script,
+`DIGEST_DATE`, and — when figures are enabled — the figure count, accessible names, and
+that no `<img>` tag reached the page.
+
+Figure caps are enforced at render time, not by you: a figure that fails validation or
+exceeds `config.figures.max_per_digest` is dropped and reported in `figures_rejected`.
+**A dropped figure is a log line, never a build failure** — do not retry the build over
+one, and do not hand-edit a figure back in. **If it fails, fix the selection/stories JSON and re-run assemble +
 build + validate until it passes**; if truly unfixable, record it prominently in the
 run log — never silently ship a failed digest. If `build_digest.py` or `template.html`
 is missing/broken, fall back to hand-writing HTML from the most recent digest and note
@@ -262,6 +268,15 @@ the fallback.
    outcomes (first try / retried / dropped), your selection decisions with reasons,
    which wild-card candidate won and which 👍/👎 entries influenced it (or why none
    shipped), validation result, fallbacks taken.
+
+   **Figures (only if `config.figures.enabled`).** `build_digest.py` reports
+   `figures_rendered` and `figures_rejected` in its JSON result. Copy them verbatim
+   under a `## Figures` heading — one line per rejection, with the story and the
+   reason. Do not summarise or editorialise them: accumulated over weeks these
+   rejections are the only evidence for which quality checks actually fire, and
+   therefore the only sound basis for tightening the gate in
+   `briefing/figures_chart.md`. Zero rendered is the expected result on most days and
+   is not worth remarking on.
 5. **Clean old state dirs:**
    ```bash
    python3 "$PROJECT/_pipeline/checkpoint.py" clean --keep-days 2

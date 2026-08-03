@@ -12,36 +12,53 @@
     "max": 8,
     "per_topic_cap": 2
   },
+  "figures": {
+    "_comment": "Optional data figures in story cards. OFF by default; leave it off unless you want them. 'chart' figures are generated locally as inline HTML/SVG from numbers the story already cites -- no network at read time, no third-party package, no licensing question. Enable per topic with the topic's \"figures\" field (\"none\" or \"chart\"). Most days should still produce none.",
+    "enabled": false,
+    "max_per_digest": 2,
+    "chart": {
+      "min_points": 4,
+      "max_points": 24,
+      "max_label_chars": 18,
+      "aspect": 4.0,
+      "_aspect_comment": "Width:height of the line chart's coordinate space. Editorial, not layout: a wide short chart flattens slopes, a taller one exaggerates them. The chart always renders at 100% of the card width regardless."
+    }
+  },
   "topics": [
     {
       "key": "World News",
       "slug": "world",
       "definition": "Major international developments — conflicts, diplomacy, elections, and cross-border events with global significance. Prefer consequential shifts over routine updates.",
-      "enrichment": "regional+divergence"
+      "enrichment": "regional+divergence",
+      "figures": "none"
     },
     {
       "key": "US Politics & Policy",
       "slug": "us-politics",
       "definition": "Federal and state legislation, court rulings, elections, and regulatory changes in the United States. Anchor to what actually changes for people and institutions. This topic uses the optional 'State Watch' angle below to add a local read for the markets/states you follow.",
-      "enrichment": "state-watch"
+      "enrichment": "state-watch",
+      "figures": "none"
     },
     {
       "key": "Technology",
       "slug": "tech",
       "definition": "Structural technology developments: major platform and product shifts, AI milestones, cybersecurity, and significant research breakthroughs. Not routine product updates.",
-      "enrichment": "regional+divergence"
+      "enrichment": "regional+divergence",
+      "figures": "none"
     },
     {
       "key": "Business & Markets",
       "slug": "business",
       "definition": "Markets and macroeconomics, corporate finance, major M&A, earnings that move a sector, and notable fraud/enforcement. Anchor to what it means for the broader economy.",
-      "enrichment": "regional+divergence"
+      "enrichment": "regional+divergence",
+      "figures": "none"
     },
     {
       "key": "Science",
       "slug": "science",
       "definition": "Research discoveries and genuine milestones across the sciences — new findings, published results, and mission outcomes. Prefer findings over hype.",
-      "enrichment": "regional+divergence"
+      "enrichment": "regional+divergence",
+      "figures": "none"
     }
   ],
   "wildcard": {
@@ -240,5 +257,14 @@
   "state_keep_days": 2,
   "_state_keep_days_comment": "checkpoint.py clean removes _pipeline/state/<date>/ dirs older than this many days (Phase 4 hygiene).",
   "digest_timezone": "America/New_York",
-  "_digest_timezone_comment": "IANA timezone for all times in story bodies and framing (e.g. America/New_York, Europe/London, Asia/Tokyo). build_context.py injects it into every agent prompt (__TIMEZONE__ in briefing/main.md): agents convert UTC event times (geomagnetic storm peaks, economic data releases, etc.) to this zone with the correct seasonal abbreviation. Never leave a UTC timestamp as the only time reference."
+  "_digest_timezone_comment": "IANA timezone for all times in story bodies and framing (e.g. America/New_York, Europe/London, Asia/Tokyo). build_context.py injects it into every agent prompt (__TIMEZONE__ in briefing/main.md): agents convert UTC event times (geomagnetic storm peaks, economic data releases, etc.) to this zone with the correct seasonal abbreviation. Never leave a UTC timestamp as the only time reference.",
+  "feedback_filename": "news_feedback.md",
+  "agent_candidates_per_topic": 3,
+  "_agent_candidates_per_topic_comment": "How many candidates each topic agent returns. The wild card uses wildcard.count instead. Raise for more choice at triage, lower to cut tokens.",
+  "focus_state_tags": {
+    "California": "CA",
+    "Texas": "TX",
+    "New York": "NY"
+  },
+  "_focus_state_tags_comment": "Optional short labels for the State Watch pill, mapping each focus_states entry to the tag rendered in the digest (and offered to agents in the return schema). Omit an entry to use its full name. Not US-specific -- use whatever short form suits your regions."
 }

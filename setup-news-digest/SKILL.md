@@ -45,6 +45,13 @@ sense; always allow a custom "Other" answer.
    and set `digest_timezone` to their IANA zone (e.g. `America/New_York`, `Europe/London`).
 6. **Wild Card** — "Want a daily 'Wild Card' — one surprising finance/markets story outside your
    main topics?" Sets `wildcard.enabled`.
+7. **Figures (optional)** — "Want the digest to draw a small chart when a story is genuinely
+   about numbers? It's off by default, and most days will still have none." If they say yes,
+   ask which of their beats should be eligible. Recommend starting with **one or two**
+   data-heavy beats rather than all of them: the point of the feature is scarcity, and a
+   digest where most stories carry a chart signals nothing. Sets `figures.enabled` and each
+   chosen topic's `"figures": "chart"`. If they say no, leave everything as the template has
+   it — the feature then costs nothing at all, not even prompt tokens.
 
 ## 2. Generate `_pipeline/config.json`
 
@@ -65,6 +72,13 @@ Start from the config template (found in step 0) and apply their answers:
   `focus_states` to `[]`, `focus_state_markets` to `{}`, and make sure no topic uses
   `"state-watch"` enrichment.
 - Set `digest_timezone`, `wildcard.enabled`, and any source overrides.
+- **Figures:** if they said yes in step 1.7, set `figures.enabled` to `true` and give each
+  chosen topic `"figures": "chart"`. Every other topic keeps `"figures": "none"`. If they said
+  no, change nothing — the template already ships with `figures.enabled` false and every topic
+  at `"none"`.
+- **Regional tags:** if you set `focus_states`, give each entry a short label in
+  `focus_state_tags` (e.g. `"Illinois": "IL"`) — that is what appears in the State Watch pill
+  and in the agents' return schema. Unmapped entries fall back to the full name.
 - Keep all the machinery keys (dedup windows, `source_screen`, `agent_*`, allow/block lists,
   `story_count`, etc.) unless the user asked to change them — they're sensible defaults.
 

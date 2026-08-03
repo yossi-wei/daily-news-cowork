@@ -374,6 +374,59 @@ class TestValidatorFigureGates(unittest.TestCase):
         self.assertEqual(vd.load_figure_cap("/nonexistent"), 2)
 
 
+class TestDocsMatchCode(unittest.TestCase):
+    """Documentation that drifts from behaviour is worse than none -- the validator
+    already shipped once claiming a config-driven range it did not read."""
+
+    ROOT = dirname(HERE)
+
+    def read(self, *parts):
+        with open(join(self.ROOT, *parts), encoding="utf-8") as fh:
+            return fh.read()
+
+    def test_readme_documents_figures_and_keeps_the_stdlib_promise(self):
+        readme = self.read("README.md")
+        self.assertIn("## Figures", readme)
+        self.assertIn("no third-party package", readme.lower().replace("**", ""))
+
+    def test_readme_names_the_real_config_keys(self):
+        readme = self.read("README.md")
+        example = json.loads(self.read("_pipeline", "config.example.json"))
+        for key in ("enabled", "max_per_digest"):
+            self.assertIn(key, readme)
+            self.assertIn(key, example["figures"])
+
+    def test_setup_skill_asks_about_figures(self):
+        skill = self.read("setup-news-digest", "SKILL.md")
+        self.assertIn("figures.enabled", skill)
+        self.assertIn("focus_state_tags", skill)
+
+    def test_setup_template_matches_the_shipped_example(self):
+        """A new user configured by the skill must get the same keys as a user who
+        copies config.example.json by hand."""
+        tpl = json.loads(self.read("setup-news-digest", "references",
+                                   "config.template.json"))
+        example = json.loads(self.read("_pipeline", "config.example.json"))
+        for key in ("figures", "feedback_filename", "agent_candidates_per_topic",
+                    "focus_state_tags"):
+            self.assertIn(key, tpl, f"config.template.json missing {key}")
+        self.assertIs(tpl["figures"]["enabled"], False)
+        self.assertEqual(tpl["figures"], example["figures"])
+        for t in tpl["topics"]:
+            self.assertEqual(t.get("figures"), "none")
+
+    def test_template_tags_cover_its_own_focus_states(self):
+        tpl = json.loads(self.read("setup-news-digest", "references",
+                                   "config.template.json"))
+        for state in tpl.get("focus_states", []):
+            self.assertIn(state, tpl.get("focus_state_tags", {}))
+
+    def test_orchestrator_documents_rejection_logging(self):
+        skill = self.read("SKILL.md")
+        self.assertIn("figures_rejected", skill)
+        self.assertIn("never a build failure", skill)
+
+
 class TestCarryFields(unittest.TestCase):
     def test_figure_and_urls_are_carried(self):
         """A field absent from CARRY_FIELDS is dropped between the agent return and

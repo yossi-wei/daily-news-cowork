@@ -49,6 +49,8 @@ is a html file in the project, if you want you can add email delivery etc.
 │   ├── append_history.py / prune_history.py     # Idempotent, bounded history writeback
 │   ├── check_existing_digest.py / run_lock.py   # Run guards
 │   ├── checkpoint.py           # Phase checkpoints → retries resume, not re-run
+│   ├── render_chart.py         # Optional figures → inline HTML bars / SVG lines (stdlib)
+│   ├── test_*.py               # Unit tests: python3 -m unittest discover -s _pipeline
 │   ├── briefing/               # Agent briefing templates (the long-form gathering rules)
 │   └── state/                  # Created at runtime: per-day prompts/returns/checkpoints (git-ignored)
 ├── news_feedback.example.md    # Copy → news_feedback.md (your learned preferences)
@@ -104,6 +106,49 @@ before shipping, then (5) history, the topic inbox, and the run log are written 
 Every phase checkpoints into `_pipeline/state/<date>/`, so a retry resumes where the last attempt
 stopped instead of re-running. The design rule throughout: **emit content, not boilerplate, and
 never abort the whole digest because one piece failed.**
+
+## Figures (optional, off by default)
+
+A story that is genuinely *about* a series of numbers can carry a small chart. Everything
+else — which is most stories, most days — carries none.
+
+Charts are rendered locally into the page: bar charts as plain HTML, trend lines as inline
+SVG. **This adds no third-party package** (the stdlib-only promise above still holds), and no
+network request when you open the digest. The labels and values are real text, so they stay
+selectable, searchable, and readable to a screen reader.
+
+Turn it on in `_pipeline/config.json`, then opt in per topic:
+
+```jsonc
+"figures": { "enabled": true, "max_per_digest": 2 },
+
+"topics": [
+  { "key": "Science", "slug": "science", "figures": "chart" },
+  { "key": "World News", "slug": "world", "figures": "none" }
+]
+```
+
+Both gates default to off, so a config written before this feature existed behaves exactly as
+it did.
+
+**When a chart is allowed.** The gathering agent may attach one only if all four hold, and the
+build re-checks the last two in code:
+
+1. the figure *is* the news — the data that was released, not a number mentioned in passing;
+2. it carries what the prose cannot — a shape, a distribution, a comparison too long to write out;
+3. every number traces to a URL the story already cites (`series_source` must appear in the
+   story's own `urls`, checked at build time — a chart cannot cite a source the story doesn't);
+4. it reads at a glance — 4–24 points, short labels.
+
+Bar lengths are percentages of the largest value from a zero origin, so the renderer *cannot*
+produce a truncated axis. Anything refused is dropped with a reason in the run log and never
+fails the build.
+
+**A note on photographs.** Only locally-rendered charts are supported. Hotlinking images from
+news sites is deliberately not implemented: it leaks the reader's IP to third parties, breaks
+when URLs rot, and the imagery most readily available — a politician at a podium, a stock photo
+of a ship — is decoration rather than evidence. The validator fails any digest containing an
+`<img>` tag.
 
 ## Privacy
 
