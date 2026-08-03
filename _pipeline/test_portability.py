@@ -35,6 +35,11 @@ def tracked_engine_files():
     for f in out:
         if not f or f.startswith("_goldens/"):
             continue
+        # This file necessarily contains the terms it searches for -- the patterns
+        # below are literal owner names and path prefixes -- so scanning it would
+        # always self-report. Everything else is fair game, including other tests.
+        if os.path.basename(f) == os.path.basename(__file__):
+            continue
         if f.endswith((".py", ".html", ".md", ".json")) and "example" not in f:
             keep.append(join(ROOT, f))
     return [f for f in keep if os.path.isfile(f)]
