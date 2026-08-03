@@ -45,6 +45,14 @@ REWRITE-review-hardened.md
 
 # --- Personal dev notes (not part of the shipped engine) ---
 cowork_portability_best_practices.md
+RESEARCH-figures-in-digest.md
+linkedin-posts-drafts.md
+
+# --- Personal history archives (rolled-off story history; never publish) ---
+story-history-archive-*.json
+
+# --- Golden fixtures for build regression tests (local only, machine-specific dates) ---
+_goldens/
 
 # --- Scratch temp files ---
 *.tmp
