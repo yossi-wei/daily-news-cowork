@@ -88,7 +88,7 @@ which figure, which single source, your confidence level.
 ## Enrichment
 
 __ENRICHMENT_BLOCK__
-
+__FIGURES_BLOCK__
 ## What to return, and how
 
 Gather **~__N_CANDIDATES__ compact candidates** (facts + deep-link URLs, not prose),

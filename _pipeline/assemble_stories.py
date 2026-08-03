@@ -52,7 +52,10 @@ import argparse, json, os, re, sys
 _LEGACY_DEFAULT_FOLDER = os.path.expanduser("~/Daily news")  # portable last-resort only; real resolution is --folder > $DAILY_NEWS_FOLDER > parent of _pipeline/
 
 CARRY_FIELDS = ("headline", "toc_hook", "sources", "body",
-                "regional", "divergence", "state_watch")
+                "regional", "divergence", "state_watch",
+                # "urls" is carried so build_digest.py can check that a figure's
+                # series_source is one of the story's own citations; it is not rendered.
+                "urls", "figure")
 
 
 def resolve_folder(arg=None):

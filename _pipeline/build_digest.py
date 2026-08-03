@@ -49,6 +49,13 @@ Usage:
 """
 import argparse, datetime, json, os, re, sys
 
+# Optional figure renderer. Imported defensively: a syntax error or a missing file in
+# render_chart.py must cost the figures, never the digest.
+try:
+    import render_chart
+except Exception:  # pragma: no cover - exercised by the missing-module test
+    render_chart = None
+
 _LEGACY_DEFAULT_FOLDER = os.path.expanduser("~/Daily news")  # portable last-resort only; real resolution is --folder > $DAILY_NEWS_FOLDER > parent of _pipeline/
 
 # Slugs for the two special sections. Topic slugs are loaded from config.topics at build
@@ -167,6 +174,88 @@ def render_state_watch(story):
     )
 
 
+FIGURE_CSS_RE = re.compile(
+    r"[ \t]*/\* FIGURE-CSS-START \*/.*?/\* FIGURE-CSS-END \*/\n?",
+    re.S,
+)
+
+
+def extract_figure_css(template):
+    """Pull the figure style rules out of template.html. template.html is the single
+    source of truth for them; render_chart.py's preview reads the same markers."""
+    m = FIGURE_CSS_RE.search(template)
+    return m.group(0) if m else ""
+
+
+def strip_figure_css(template):
+    """Remove the figure style block. A digest with no figures then contains no trace
+    of the feature, which keeps pre-feature digests reproducible byte-for-byte."""
+    return FIGURE_CSS_RE.sub("", template, count=1)
+
+
+def apply_figure_policy(stories, cfg, colors):
+    """Validate, cap and pre-render every story's optional figure.
+
+    Runs over the whole digest because the cap is per digest, not per card. Rendered
+    markup is stashed on the story as `_figure_html` for render_card to emit; the raw
+    `figure` object is always removed so a rejected one cannot leak into the page.
+
+    Returns (n_rendered, rejections) where rejections is a list of (headline, reason).
+    Never raises and never fails the build: a refused figure is a run-log line. That
+    matters because this runs unattended before dawn."""
+    fig_cfg = cfg.get("figures") or {}
+    rejections = []
+
+    if not fig_cfg.get("enabled"):
+        for s in stories:
+            s.pop("figure", None)
+        return 0, rejections
+
+    if render_chart is None:
+        pending = [s.get("headline", "") for s in stories if s.get("figure")]
+        for s in stories:
+            s.pop("figure", None)
+        return 0, [(h, "render_chart module unavailable") for h in pending]
+
+    cap = int(fig_cfg.get("max_per_digest") or 0)
+    chart_cfg = fig_cfg.get("chart") or {}
+
+    # Validate everything first, then apply the cap to whatever survived. Doing it in
+    # this order matters for the rejection log: if the cap ran first, a figure with a
+    # flat series or an uncited source would be logged as "cap reached", and the log
+    # exists precisely to show which quality checks are firing.
+    passed = []
+    for s in stories:
+        figure = s.pop("figure", None)
+        if not figure:
+            continue
+        headline = (s.get("headline") or s.get("id") or "?")[:70]
+
+        if s.get("oyr") or s.get("wildcard"):
+            rejections.append((headline, "figures are not carried on On Your Radar "
+                                         "or Wild Card cards"))
+            continue
+
+        urls = [u for u in (s.get("urls") or []) if isinstance(u, str)]
+        color = (colors.get(slug_for(s.get("category"))) or {}).get("border") \
+            or render_chart.FALLBACK_COLOR
+        markup, reason = render_chart.render_figure(
+            figure, urls, color, chart_cfg, uid=str(s.get("id") or "fig"))
+        if markup is None:
+            rejections.append((headline, reason))
+            continue
+        passed.append((s, headline, markup))
+
+    for i, (s, headline, markup) in enumerate(passed):
+        if i < cap:
+            s["_figure_html"] = markup
+        else:
+            rejections.append(
+                (headline, f"valid, but the per-digest cap of {cap} was already met"))
+
+    return min(len(passed), cap), rejections
+
+
 def render_card(story, number, date):
     cat = story["category"]
     slug = slug_for(cat)
@@ -200,7 +289,8 @@ def render_card(story, number, date):
         body_paras,
         '    </div>',
     ]
-    for extra in (render_regional(story), render_divergence(story), render_state_watch(story)):
+    for extra in (story.get("_figure_html", ""), render_regional(story),
+                  render_divergence(story), render_state_watch(story)):
         if extra:
             blocks.append(extra)
     blocks.append('  </div>')
@@ -299,7 +389,16 @@ def main():
             _css.append(f".badge.{slug} {{ background: {bg}; color: {txt}; }}")
     category_css = "\n  ".join(_css)
 
+    # Figures: validate, cap and pre-render before any card is built, then drop the
+    # style block entirely if none survived — that is what keeps a figures-off digest
+    # byte-identical to one produced before the feature existed.
     stories = data.get("stories", [])
+    n_figures, figure_rejections = apply_figure_policy(stories, cfg, colors)
+    if n_figures == 0:
+        template = strip_figure_css(template)
+    for headline, reason in figure_rejections:
+        print(f"WARNING: figure dropped — {headline}: {reason}", file=sys.stderr)
+
     oyr = [s for s in stories if s.get("oyr")]
     wildcards = [s for s in stories if s.get("wildcard") and not s.get("oyr")]
     regular = [s for s in stories if not s.get("oyr") and not s.get("wildcard")]
@@ -410,6 +509,10 @@ def main():
         "oyr_cards": len(oyr),
         "wildcard_cards": len(wildcards),
         "footer_sources": len(footer_list),
+        # Surfaced so the orchestrator can copy them into the run log. Two weeks of
+        # these is the only evidence base for tightening the gate.
+        "figures_rendered": n_figures,
+        "figures_rejected": [{"story": h, "reason": r} for h, r in figure_rejections],
     }, ensure_ascii=False))
 
 

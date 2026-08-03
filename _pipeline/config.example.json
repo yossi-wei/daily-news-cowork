@@ -13,36 +13,53 @@
     "max": 8,
     "per_topic_cap": 2
   },
+  "figures": {
+    "_comment": "Optional data figures in story cards. OFF by default; leave it off unless you want them. 'chart' figures are generated locally as inline HTML/SVG from numbers the story already cites -- no network at read time, no third-party package, no licensing question. Enable per topic with the topic's \"figures\" field (\"none\" or \"chart\"). Most days should still produce none.",
+    "enabled": false,
+    "max_per_digest": 2,
+    "chart": {
+      "min_points": 4,
+      "max_points": 24,
+      "max_label_chars": 18,
+      "aspect": 4.0,
+      "_aspect_comment": "Width:height of the line chart's coordinate space. Editorial, not layout: a wide short chart flattens slopes, a taller one exaggerates them. The chart always renders at 100% of the card width regardless."
+    }
+  },
   "topics": [
     {
       "key": "World News",
       "slug": "world",
       "definition": "Major international developments — conflicts, diplomacy, elections, and cross-border events with global significance. Prefer consequential shifts over routine updates.",
-      "enrichment": "regional+divergence"
+      "enrichment": "regional+divergence",
+      "figures": "none"
     },
     {
       "key": "US Politics & Policy",
       "slug": "us-politics",
       "definition": "Federal and state legislation, court rulings, elections, and regulatory changes in the United States. Anchor to what actually changes for people and institutions. This topic uses the optional 'State Watch' angle below to add a local read for the markets/states you follow.",
-      "enrichment": "state-watch"
+      "enrichment": "state-watch",
+      "figures": "none"
     },
     {
       "key": "Technology",
       "slug": "tech",
       "definition": "Structural technology developments: major platform and product shifts, AI milestones, cybersecurity, and significant research breakthroughs. Not routine product updates.",
-      "enrichment": "regional+divergence"
+      "enrichment": "regional+divergence",
+      "figures": "none"
     },
     {
       "key": "Business & Markets",
       "slug": "business",
       "definition": "Markets and macroeconomics, corporate finance, major M&A, earnings that move a sector, and notable fraud/enforcement. Anchor to what it means for the broader economy.",
-      "enrichment": "regional+divergence"
+      "enrichment": "regional+divergence",
+      "figures": "none"
     },
     {
       "key": "Science",
       "slug": "science",
       "definition": "Research discoveries and genuine milestones across the sciences — new findings, published results, and mission outcomes. Prefer findings over hype.",
-      "enrichment": "regional+divergence"
+      "enrichment": "regional+divergence",
+      "figures": "none"
     }
   ],
   "wildcard": {

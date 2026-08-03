@@ -16,6 +16,7 @@
 *-run-log.md
 *-run-log-TEST.md
 *-news-digest-TEST.html
+*-figures-SAMPLE.html
 
 # --- Personal config & state (created from the *.example templates) ---
 _pipeline/config.json
