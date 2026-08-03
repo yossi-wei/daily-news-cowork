@@ -8,6 +8,7 @@ prompt byte-identical to one generated before the feature existed, because any m
 of figures (even a prohibition) measurably raises the chance a model produces one.
 """
 import json
+import os
 import unittest
 from os.path import abspath, dirname, join
 import sys
@@ -420,6 +421,27 @@ class TestDocsMatchCode(unittest.TestCase):
                                    "config.template.json"))
         for state in tpl.get("focus_states", []):
             self.assertIn(state, tpl.get("focus_state_tags", {}))
+
+    def test_packaged_skill_is_not_stale(self):
+        """setup-news-digest.skill is the one-click installable copy. If it drifts from
+        the source folder, a new user installs an older onboarding flow than the repo
+        documents -- silently, since nothing else reads the archive."""
+        import zipfile
+        archive = join(self.ROOT, "setup-news-digest.skill")
+        if not os.path.exists(archive):
+            self.skipTest("packaged skill not present")
+        with zipfile.ZipFile(archive) as z:
+            names = set(z.namelist())
+            self.assertIn("SKILL.md", names, "SKILL.md must be at the archive root")
+            for rel in ("SKILL.md", "references/config.template.json",
+                        "references/daily-topics.template.md",
+                        "references/news_feedback.template.md"):
+                self.assertIn(rel, names, f"{rel} missing from the archive")
+                packaged = z.read(rel).decode("utf-8")
+                with open(join(self.ROOT, "setup-news-digest", rel),
+                          encoding="utf-8") as fh:
+                    self.assertEqual(packaged, fh.read(),
+                                     f"{rel} in the .skill archive is stale; rebuild it")
 
     def test_orchestrator_documents_rejection_logging(self):
         skill = self.read("SKILL.md")
