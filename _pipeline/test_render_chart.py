@@ -190,6 +190,27 @@ class TestRenderGeometry(unittest.TestCase):
         markup, _ = rc.render_figure(fig(chart_type="line", series=pts), URLS)
         self.assertEqual(markup.count("<circle"), 6)
 
+    def test_line_text_labels_do_not_collide(self):
+        """Every <text> must be either on a different row or a different anchor. An
+        earlier layout put the low value 8px above the first x-label at the same x."""
+        import re
+        markup, _ = rc.render_figure(fig(chart_type="line"), URLS)
+        placed = re.findall(r'<text[^>]*x="([\d.]+)"[^>]*y="([\d.]+)"([^>]*)>', markup)
+        rows = {}
+        for x, y, rest in placed:
+            anchor = "end" if 'text-anchor="end"' in rest else "start"
+            band = round(float(y) / 20)
+            key = (band, anchor)
+            self.assertNotIn(key, rows,
+                             f"two labels share row {band} at anchor {anchor}")
+            rows[key] = x
+
+    def test_line_reports_full_value_range(self):
+        pts = [{"label": "a", "value": 12.4}, {"label": "b", "value": 20},
+               {"label": "c", "value": 15}, {"label": "d", "value": 29.4}]
+        markup, _ = rc.render_figure(fig(chart_type="line", series=pts), URLS)
+        self.assertIn("12.4–29.4", markup)
+
     def test_line_endpoints_labelled(self):
         pts = [{"label": "Jan", "value": 1}, {"label": "Feb", "value": 4},
                {"label": "Mar", "value": 2}, {"label": "Dec", "value": 9}]

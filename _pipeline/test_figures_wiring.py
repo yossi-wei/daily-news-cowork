@@ -136,5 +136,183 @@ class TestConfigShape(unittest.TestCase):
                              f"{key} differs between render_chart.DEFAULTS and config.example")
 
 
+import build_digest as bd  # noqa: E402
+
+SRC = "https://example.gov/reports/2026/spend"
+
+
+def chart(**over):
+    f = {"kind": "chart", "chart_type": "bar",
+         "series": [{"label": f"Q{i}", "value": v}
+                    for i, v in enumerate([10, 20, 15, 30], 1)],
+         "series_unit": "billion USD", "series_source": SRC,
+         "alt": "Spending rose across four quarters.",
+         "caption": "Doubled in a year.",
+         "why_it_qualifies": "test 2"}
+    f.update(over)
+    return f
+
+
+def story(sid="s1", **over):
+    s = {"id": sid, "category": "AI & Tech", "headline": f"Headline {sid}",
+         "body": ["p"], "urls": [SRC], "figure": chart()}
+    s.update(over)
+    return s
+
+
+ON = {"figures": {"enabled": True, "max_per_digest": 2, "chart": {}}}
+
+
+class TestFigurePolicy(unittest.TestCase):
+    def test_disabled_strips_figure_without_rendering(self):
+        ss = [story()]
+        n, rej = bd.apply_figure_policy(ss, {"figures": {"enabled": False}}, {})
+        self.assertEqual((n, rej), (0, []))
+        self.assertNotIn("figure", ss[0])
+        self.assertNotIn("_figure_html", ss[0])
+
+    def test_config_without_figures_key(self):
+        ss = [story()]
+        self.assertEqual(bd.apply_figure_policy(ss, {}, {})[0], 0)
+        self.assertNotIn("figure", ss[0])
+
+    def test_valid_figure_renders(self):
+        ss = [story()]
+        n, rej = bd.apply_figure_policy(ss, ON, {})
+        self.assertEqual((n, rej), (1, []))
+        self.assertIn("fig-bars", ss[0]["_figure_html"])
+
+    def test_raw_figure_object_never_survives(self):
+        """Whatever happens, the unrendered dict must not reach the page."""
+        ss = [story("s1"), story("s2", figure=chart(series_unit="")),
+              story("s3", urls=["https://elsewhere.com/a/b"])]
+        bd.apply_figure_policy(ss, ON, {})
+        for s in ss:
+            self.assertNotIn("figure", s)
+
+    def test_cap_enforced(self):
+        ss = [story(f"s{i}") for i in range(5)]
+        n, rej = bd.apply_figure_policy(ss, ON, {})
+        self.assertEqual(n, 2)
+        self.assertEqual(sum("_figure_html" in s for s in ss), 2)
+        self.assertEqual(len(rej), 3)
+
+    def test_cap_of_zero_renders_nothing(self):
+        ss = [story()]
+        n, _ = bd.apply_figure_policy(ss, {"figures": {"enabled": True,
+                                                       "max_per_digest": 0}}, {})
+        self.assertEqual(n, 0)
+
+    def test_invalid_figures_report_their_real_reason_not_the_cap(self):
+        """Validation runs before the cap. If it did not, a flat series in a full
+        digest would be logged as 'cap reached' and the rejection log -- the whole
+        evidence base for tightening the gate -- would say nothing useful."""
+        ss = [story("s1"), story("s2"),
+              story("s3", figure=chart(series=[{"label": f"p{i}", "value": 7}
+                                               for i in range(5)])),
+              story("s4", urls=["https://elsewhere.com/a/b"])]
+        n, rej = bd.apply_figure_policy(ss, ON, {})
+        self.assertEqual(n, 2)
+        reasons = {h: r for h, r in rej}
+        self.assertIn("flat series", reasons["Headline s3"])
+        self.assertIn("not among the story's cited urls", reasons["Headline s4"])
+        for r in reasons.values():
+            self.assertNotIn("cap", r)
+
+    def test_overflow_reason_says_it_was_valid(self):
+        ss = [story(f"s{i}") for i in range(3)]
+        _, rej = bd.apply_figure_policy(ss, ON, {})
+        self.assertIn("valid, but the per-digest cap", rej[0][1])
+
+    def test_oyr_and_wildcard_refused(self):
+        ss = [story("oyr1", oyr=True), story("wc1", wildcard=True)]
+        n, rej = bd.apply_figure_policy(ss, ON, {})
+        self.assertEqual(n, 0)
+        self.assertEqual(len(rej), 2)
+        for _, reason in rej:
+            self.assertIn("On Your Radar", reason)
+
+    def test_story_without_urls_cannot_pass_traceability(self):
+        ss = [story(urls=[])]
+        n, rej = bd.apply_figure_policy(ss, ON, {})
+        self.assertEqual(n, 0)
+        self.assertIn("cited urls", rej[0][1])
+
+    def test_uses_category_color(self):
+        """main() populates CATEGORY_SLUG from config.topics before this runs, so the
+        lookup resolves a display name to its configured slug."""
+        saved = dict(bd.CATEGORY_SLUG)
+        try:
+            bd.CATEGORY_SLUG["AI & Tech"] = "ai"
+            ss = [story()]
+            bd.apply_figure_policy(ss, ON, {"ai": {"border": "#abcdef"}})
+            self.assertIn("#abcdef", ss[0]["_figure_html"])
+        finally:
+            bd.CATEGORY_SLUG.clear()
+            bd.CATEGORY_SLUG.update(saved)
+
+    def test_unknown_category_falls_back_to_default_color(self):
+        ss = [story(category="Not In Config")]
+        bd.apply_figure_policy(ss, ON, {})
+        self.assertIn("background:#", ss[0]["_figure_html"])
+
+    def test_missing_renderer_degrades_to_rejections(self):
+        real = bd.render_chart
+        try:
+            bd.render_chart = None
+            ss = [story()]
+            n, rej = bd.apply_figure_policy(ss, ON, {})
+            self.assertEqual(n, 0)
+            self.assertIn("unavailable", rej[0][1])
+            self.assertNotIn("figure", ss[0])
+        finally:
+            bd.render_chart = real
+
+    def test_malformed_figure_is_rejected_not_raised(self):
+        for bad in ("nope", 42, {"kind": "chart"}, {"kind": "image"}):
+            s = {"id": "x", "category": "AI & Tech", "headline": "h",
+                 "urls": [SRC], "figure": bad}
+            n, rej = bd.apply_figure_policy([s], ON, {})
+            self.assertEqual(n, 0)
+            self.assertTrue(rej, f"{bad!r} should have produced a logged reason")
+
+    def test_absent_figure_is_not_a_rejection(self):
+        """A story that simply offered no figure is the normal case, not a refusal --
+        logging it would bury the real rejections in noise."""
+        for empty in (None, [], {}, ""):
+            s = {"id": "x", "category": "AI & Tech", "headline": "h",
+                 "urls": [SRC], "figure": empty}
+            n, rej = bd.apply_figure_policy([s], ON, {})
+            self.assertEqual((n, rej), (0, []))
+
+
+class TestCardAndCssIntegration(unittest.TestCase):
+    def test_rendered_figure_appears_in_card(self):
+        s = story()
+        bd.apply_figure_policy([s], ON, {})
+        html = bd.render_card(s, 1, "2026-08-03")
+        self.assertIn("fig-bars", html)
+
+    def test_card_without_figure_is_unchanged(self):
+        s = story(figure=None)
+        bd.apply_figure_policy([s], ON, {})
+        self.assertNotIn("story-figure", bd.render_card(s, 1, "2026-08-03"))
+
+    def test_css_block_round_trips(self):
+        with open(join(HERE, "template.html"), encoding="utf-8") as fh:
+            tpl = fh.read()
+        self.assertIn(".fb-track", bd.extract_figure_css(tpl))
+        self.assertNotIn(".fb-track", bd.strip_figure_css(tpl))
+
+
+class TestCarryFields(unittest.TestCase):
+    def test_figure_and_urls_are_carried(self):
+        """A field absent from CARRY_FIELDS is dropped between the agent return and
+        the stories JSON with no error -- the silent-failure point for this feature."""
+        import assemble_stories as asm
+        self.assertIn("figure", asm.CARRY_FIELDS)
+        self.assertIn("urls", asm.CARRY_FIELDS)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -217,10 +217,12 @@ def render_line(figure, color=FALLBACK_COLOR, uid="fig", cfg=None):
         f'      <polyline points="{pts}" fill="none" stroke="{e(color)}" stroke-width="2"\n'
         '                stroke-linejoin="round" stroke-linecap="round"/>\n'
         f'      {dots}\n'
+        # Value range on one line at the top, x-labels along the bottom. An earlier
+        # version put the low value just above the first x-label at the same x, 8px
+        # apart, where the two collided.
+        f'      <text class="fl-ax" x="{P:g}" y="16">{e(fmt(lo))}–{e(fmt(hi))} {e(unit)}</text>\n'
         f'      <text class="fl-ax" x="{P:g}" y="{H - 6:g}">{e(labels[0])}</text>\n'
         f'      <text class="fl-ax" x="{W - P:g}" y="{H - 6:g}" text-anchor="end">{e(labels[-1])}</text>\n'
-        f'      <text class="fl-ax" x="{P:g}" y="16">{e(fmt(hi))} {e(unit)}</text>\n'
-        f'      <text class="fl-ax" x="{P:g}" y="{H - P + 14:g}">{e(fmt(lo))}</text>\n'
         '    </svg>'
     )
 
