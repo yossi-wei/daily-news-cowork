@@ -262,6 +262,28 @@ def _focus_markets_block(cfg):
                      for state, markets in fm.items())
 
 
+FIGURE_MODES = ("none", "chart")
+
+
+def _figures_mode(cfg, topic):
+    """Which figure briefing fragment this topic's agent receives.
+
+    Two independent gates, both defaulting to off, so an existing config with no
+    `figures` key behaves exactly as it did before the feature existed:
+      1. config.figures.enabled -- the whole feature
+      2. the topic's own "figures" field
+
+    The wild card is always "none": it is a single additive card whose job is a
+    surprising story, not a data readout. An unrecognised mode also falls back to
+    "none" rather than raising -- a typo in config should cost a figure, not a run."""
+    if not (cfg.get("figures") or {}).get("enabled"):
+        return "none"
+    if topic.get("_wildcard"):
+        return "none"
+    mode = topic.get("figures", "none")
+    return mode if mode in FIGURE_MODES else "none"
+
+
 def _focus_state_tags(cfg):
     """The short labels rendered in the State Watch tag, in focus_states order.
 
@@ -311,6 +333,17 @@ def emit_agent_prompts(folder, today, ctx, warnings, returns_root=None):
                        .replace("__FOCUS_MARKETS__", _focus_markets_block(cfg)),
         "none": _read_briefing(folder, "enrichment_none.md", warnings),
     }
+    # Figure instructions are opt-in twice over: globally via config.figures.enabled and
+    # per topic via the topic's "figures" field. figures_none.md is intentionally EMPTY
+    # rather than a "do not include figures" sentence -- naming figures in order to
+    # forbid them is exactly what makes a model start considering them. An empty splice
+    # also keeps a figures-off prompt byte-identical to a pre-feature one.
+    figures_cfg = cfg.get("figures") or {}
+    figures_on = bool(figures_cfg.get("enabled"))
+    figures_tpl = {
+        "none": "",
+        "chart": _read_briefing(folder, "figures_chart.md", warnings) if figures_on else "",
+    }
     wildcard_extra_tpl = _read_briefing(folder, "wildcard_extra.md", warnings)
 
     blocklist = ", ".join(cfg.get("websearch_blocklist_400s", []))
@@ -335,6 +368,7 @@ def emit_agent_prompts(folder, today, ctx, warnings, returns_root=None):
     for topic in topics:
         slug = _slug(topic)
         enrichment = topic.get("enrichment", "none")
+        figures_block = figures_tpl.get(_figures_mode(cfg, topic), "")
         dedup_entries = ctx["dedup_by_category"].get(topic["key"], [])
         omitted = ctx["dedup_omitted"].get(topic["key"], 0)
         extra = ""
@@ -354,6 +388,7 @@ def emit_agent_prompts(folder, today, ctx, warnings, returns_root=None):
                 .replace("__BLOCKLIST__", blocklist)
                 .replace("__ALLOWLIST_BLOCK__", _allowlist_block(cfg, enrichment))
                 .replace("__ENRICHMENT_BLOCK__", enrich_tpl.get(enrichment, enrich_tpl["none"]))
+                .replace("__FIGURES_BLOCK__", figures_block)
                 .replace("__FOCUS_STATES__", _focus_states_token(cfg))
                 .replace("__N_CANDIDATES__",
                          str(wc.get("count", topic_candidates) if topic.get("_wildcard")
