@@ -4,7 +4,7 @@ Phase 4 verification gate: structural QA on the generated digest HTML before it
 ships. Catches the silent failures that matter for an unattended run.
 
 Checks:
-  * story-card count is within [min,max] (default 5-8), excluding On Your Radar
+  * story-card count is within config.story_count [min,max], excluding On Your Radar
   * every TOC anchor (href="#id") resolves to an element with that id
   * every data-category value is a known category slug/label
   * the feedback IIFE is present (looks for DIGEST_DATE)
@@ -15,7 +15,9 @@ Exit code 0 = pass, 1 = problems found (problems also printed as JSON).
 Pure stdlib (regex-based) so it runs anywhere without bs4.
 
 Usage:
-  validate_digest.py --html FILE --date YYYY-MM-DD [--min 5] [--max 8]
+  validate_digest.py --html FILE --date YYYY-MM-DD [--min N] [--max N]
+
+--min/--max override config.story_count; omit them to use the configured range.
 """
 import argparse, html as html_lib, json, os, re, sys
 
@@ -34,6 +36,29 @@ def resolve_folder(arg=None):
         return os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     except NameError:
         return os.path.expanduser("~/Daily news")
+
+
+def load_story_count(folder, cli_min=None, cli_max=None):
+    """Resolve the acceptable regular-card range: an explicit --min/--max wins, then
+    config.story_count, then 5-8.
+
+    SKILL.md documents this check as running against config.story_count, but the
+    range used to come from argparse defaults that nothing overrode, so a user who
+    configured a different story_count got silently validated against 5-8."""
+    lo, hi, src = 5, 8, "built-in default"
+    try:
+        with open(os.path.join(folder, "_pipeline", "config.json"), encoding="utf-8") as fh:
+            cfg = json.load(fh)
+        sc = cfg.get("story_count") or {}
+        if isinstance(sc.get("min"), int) and isinstance(sc.get("max"), int):
+            lo, hi, src = sc["min"], sc["max"], "config.story_count"
+    except Exception:
+        pass
+    if cli_min is not None:
+        lo, src = cli_min, "--min/--max"
+    if cli_max is not None:
+        hi, src = cli_max, "--min/--max"
+    return lo, hi, src
 
 
 def load_valid_categories(folder):
@@ -56,11 +81,15 @@ def main():
     ap.add_argument("--html", required=True)
     ap.add_argument("--date", required=True)
     ap.add_argument("--folder", default=None)
-    ap.add_argument("--min", type=int, default=5)
-    ap.add_argument("--max", type=int, default=8)
+    ap.add_argument("--min", type=int, default=None,
+                    help="override the minimum regular-card count (default: config.story_count.min)")
+    ap.add_argument("--max", type=int, default=None,
+                    help="override the maximum regular-card count (default: config.story_count.max)")
     args = ap.parse_args()
 
-    valid_categories, topics_loaded = load_valid_categories(resolve_folder(args.folder))
+    folder = resolve_folder(args.folder)
+    valid_categories, topics_loaded = load_valid_categories(folder)
+    count_min, count_max, count_src = load_story_count(folder, args.min, args.max)
 
     html = open(args.html, encoding="utf-8").read()
     problems, notes = [], []
@@ -77,8 +106,9 @@ def main():
     n_regular = len(regular_cards)
     notes.append(f"regular story cards: {n_regular}; on-your-radar cards: {len(oyr_cards)}; "
                  f"wild-card cards: {len(wildcard_cards)}")
-    if not (args.min <= n_regular <= args.max):
-        problems.append(f"regular story count {n_regular} outside [{args.min},{args.max}]")
+    notes.append(f"allowed regular-card range [{count_min},{count_max}] from {count_src}")
+    if not (count_min <= n_regular <= count_max):
+        problems.append(f"regular story count {n_regular} outside [{count_min},{count_max}]")
     if len(wildcard_cards) > 1:
         problems.append(f"{len(wildcard_cards)} wild-card cards found; at most 1 allowed")
 

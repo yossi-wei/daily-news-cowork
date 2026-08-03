@@ -36,8 +36,8 @@ INPUT JSON shape (read from --in or stdin):
         {"region": "Iran", "outlet": "Tehran Times", "text": "... <em>..</em> .."}
       ],
       "divergence": "one-paragraph text", # optional; omit/null to skip
-      "state_watch": [                    # optional; Real Estate only
-        {"state": "IL", "text": "..."}
+      "state_watch": [                    # optional; topics with "state-watch" enrichment
+        {"state": "<code from config.focus_states>", "text": "..."}
       ]
     }
   ]
@@ -396,6 +396,7 @@ def main():
         .replace("__STORIES__", stories_html)
         .replace("__FOOTER_SOURCES__", footer_html)
         .replace("__DIGEST_DATE__", date)
+        .replace("__FEEDBACK_FILE__", esc(cfg.get("feedback_filename") or "news_feedback.md"))
     )
 
     out_path = args.out or os.path.join(folder, f"{date}-news-digest.html")

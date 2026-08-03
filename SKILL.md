@@ -75,6 +75,12 @@ python3 "$PROJECT/_pipeline/checkpoint.py" status --today $(date +%F)
   (prompts are already emitted); `agents` → run Phase 1 only for `agents_missing`, then
   continue; `triage` → skip to Phase 2 selection; `stories` → skip to Phase 3 build.
   Note the resume point in the run log.
+- **Resuming across sessions.** Prompt files emitted by an earlier attempt contain the
+  absolute return path *as that attempt saw it*, which is not necessarily the path this
+  run sees — a sandboxed run gets a fresh session-specific prefix each time. The
+  briefing tells each agent to fall back to resolving its return path relative to the
+  briefing file itself, so stale prompts still work. If you would rather not rely on
+  that, re-running Phase 0 with `--emit-agent-prompts` regenerates them and is cheap.
 - If `phase` is `none`, run everything.
 
 ---
