@@ -262,6 +262,31 @@ def _focus_markets_block(cfg):
                      for state, markets in fm.items())
 
 
+def _focus_state_tags(cfg):
+    """The short labels rendered in the State Watch tag, in focus_states order.
+
+    focus_states holds full region names -- they read better in the sources block and
+    they key focus_state_markets -- but the rendered tag is a small pill, so it wants
+    something short. config.focus_state_tags optionally maps a full name to its tag
+    (e.g. "Illinois" -> "IL"); anything unmapped falls back to the full name."""
+    tags = cfg.get("focus_state_tags") or {}
+    out = []
+    for s in cfg.get("focus_states", []):
+        if isinstance(s, str) and s.strip():
+            out.append(str(tags.get(s, s)))
+    return out
+
+
+def _focus_states_token(cfg):
+    """The `state` enum shown in the return schema in briefing/main.md. Built from
+    config so a user's own regions appear there -- this used to be a literal list of
+    one user's five US states, which every other user's agents were then instructed
+    to emit. Falls back to a neutral placeholder when nothing is configured (topics
+    without state-watch enrichment are told to leave the field null anyway)."""
+    tags = _focus_state_tags(cfg)
+    return "|".join(tags) if tags else "region tag"
+
+
 def _slug(topic):
     return topic.get("slug") or re.sub(r"[^a-z]+", "-", topic.get("key", "topic").lower()).strip("-")
 
@@ -291,6 +316,10 @@ def emit_agent_prompts(folder, today, ctx, warnings, returns_root=None):
     blocklist = ", ".join(cfg.get("websearch_blocklist_400s", []))
     feedback_block = ctx["active_feedback"] or "*(No active feedback rules on file.)*"
     budget = cfg.get("agent_search_budget", 4)
+    # How many candidates each topic agent is asked to return. The wild card has always
+    # had its own count in config; regular topics used a bare literal, so the number
+    # could not be tuned without editing this file.
+    topic_candidates = int(cfg.get("agent_candidates_per_topic", 3) or 3)
 
     topics = list(cfg.get("topics", []))
     wc = cfg.get("wildcard") or {}
@@ -325,9 +354,14 @@ def emit_agent_prompts(folder, today, ctx, warnings, returns_root=None):
                 .replace("__BLOCKLIST__", blocklist)
                 .replace("__ALLOWLIST_BLOCK__", _allowlist_block(cfg, enrichment))
                 .replace("__ENRICHMENT_BLOCK__", enrich_tpl.get(enrichment, enrich_tpl["none"]))
-                .replace("__N_CANDIDATES__", str(wc.get("count", 3) if topic.get("_wildcard") else 3))
+                .replace("__FOCUS_STATES__", _focus_states_token(cfg))
+                .replace("__N_CANDIDATES__",
+                         str(wc.get("count", topic_candidates) if topic.get("_wildcard")
+                             else topic_candidates))
                 .replace("__TIMEZONE__", str(cfg.get("digest_timezone", "UTC")))
-                .replace("__RETURN_PATH__", os.path.join(agent_returns_root, f"{slug}.json")))
+                .replace("__RETURN_PATH__", os.path.join(agent_returns_root, f"{slug}.json"))
+                .replace("__RETURN_FILENAME__", f"{slug}.json")
+                .replace("__TOPIC_SLUG__", slug))
         if "__" in text.replace("____", ""):
             strays = sorted(set(re.findall(r"__[A-Z_]{3,}__", text)))
             if strays:

@@ -3,6 +3,7 @@
   "_comment": "Single source of truth for the daily-news-digest orchestrator. Edit here, not in the task prompt. The digest folder is resolved dynamically by the _pipeline scripts (--folder > $DAILY_NEWS_FOLDER > parent of _pipeline/), so it is intentionally NOT stored here.",
   "output_filename_pattern": "YYYY-MM-DD-news-digest.html",
   "digest_title": "Your Daily Digest",
+  "feedback_filename": "news_feedback.md",
   "_digest_title_comment": "Branding shown in the HTML <title> and header. The last word is styled in an accent color. Set this to whatever you like (e.g. \"Alex's Morning Brief\"). The setup-news-digest skill fills this in for you.",
   "dedup_window_days": 30,
   "dedup_inject_cap": 18,
@@ -70,6 +71,12 @@
     "Texas",
     "New York"
   ],
+  "focus_state_tags": {
+    "California": "CA",
+    "Texas": "TX",
+    "New York": "NY"
+  },
+  "_focus_state_tags_comment": "Optional short labels for the State Watch pill, mapping each focus_states entry to the tag rendered in the digest (and offered to agents in the return schema). Omit an entry to use its full name. Not US-specific -- use whatever short form suits your regions.",
   "_focus_state_markets_comment": "EXAMPLE ONLY, used by the 'US Politics & Policy' topic (enrichment: state-watch). List the states you want a local read on and, for each, the specific city/county markets you follow. Replace these examples with your own, or set both this and focus_states empty and switch that topic's enrichment to 'regional+divergence' if you don't want a local angle.",
   "focus_state_markets": {
     "California": [
@@ -227,6 +234,8 @@
   },
   "agent_deadline_seconds": 420,
   "agent_search_budget": 4,
+  "agent_candidates_per_topic": 3,
+  "_agent_candidates_per_topic_comment": "How many candidates each topic agent returns. The wild card uses wildcard.count instead. Raise for more choice at triage, lower to cut tokens.",
   "agent_retry": {
     "_comment": "In-run recovery for transient agent failures (529/429/timeout/malformed JSON). max_retries = re-launches per failed agent before dropping its topic; the retry prompt tells the agent to use the reduced budget below so a blip retry stays cheap.",
     "max_retries": 1,
