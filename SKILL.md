@@ -130,6 +130,21 @@ line: "Reduced budget: at most `agent_retry.reduced_search_budget` searches, ret
 immediately; if the retry also fails, **drop that topic and continue** — no further
 retries, no abort. Record per-agent outcomes (first try / retry / dropped) for the run log.
 
+**Empty-wave recovery (degraded-search days).** After the first wave and any blip
+retries settle, count CORE topics (wildcard excluded) whose return has `status:
+no_qualifying_story`. If that count is >= `agent_retry.empty_wave.trigger_min_empty_topics`
+(3), several beats coming up dry at once points at degraded search, not a quiet news
+day — so re-launch **each** empty core topic **once**, in parallel, with the same
+prompt file plus one line: "Expanded budget: at most `agent_retry.empty_wave.search_budget`
+searches, return up to `agent_retry.empty_wave.candidates` candidates. The first pass
+found nothing — vary query phrasing, query the topic's named outlets directly by name,
+and prefer outlets' own dated article pages over generic results. Sourcing, freshness and
+dedup rules are unchanged." The agent overwrites its return file. A topic gets at most
+one empty-wave relaunch (in addition to any blip retry); if it is still empty, it stays
+dropped. Below the threshold, empty topics are treated as genuinely quiet — no relaunch.
+Record the empty-wave outcome per topic in the run log, and note in the Editorial section
+whether results looked stale or mis-dated (that is the degraded-search signature).
+
 ---
 
 ## PHASE 2 — Deterministic intake, then selection
@@ -144,7 +159,11 @@ python3 "$PROJECT/_pipeline/intake_candidates.py" \
 The triage is **bodiless by design**: per candidate you get headline, core_topic,
 toc_hook, key_facts, confidence, sources, tier verdicts (`passes_AB`, `demote_to`,
 `demote_reasons`), `history_match`, `url_flags`, and `has_body`/`has_regional`/
-`has_state_watch` flags — everything needed to select, nothing you don't. **Do not read
+`has_state_watch`/`has_figure` flags — everything needed to select, nothing you don't.
+`has_figure: true` only means the agent proposed a chart, not that it will pass
+`render_chart.py`'s validation (traceable source, non-flat series, etc.) — that gate
+still runs in `build_digest.py`, a rejection is a run-log line, never a build failure.
+**Do not read
 the return files to browse candidates**; select from the triage. If intake errors, fall
 back to reading the return files directly and triaging by hand (note it in the run log).
 
@@ -181,6 +200,13 @@ Selection rules (you, on the triage):
    - **Per-topic cap applies.** `min`–`max` is a ceiling, not a target — prefer `min`
      strong stories over `max` mediocre ones; any topic may take 0 slots on a quiet
      day. Fewer topics returned = lower floor; note reduced coverage in the run log.
+   - **Below `min` → coverage note, never filler.** If the final regular count is below
+     `story_count.min`, set `coverage_note` in selection.json: one or two plain sentences
+     naming which topics came back empty and why, e.g. "Middle East, AI Build and Real
+     Estate returned nothing that cleared the sourcing bar, even after an expanded
+     re-search; search results looked stale today." It renders as an amber banner above
+     the editor's note, and `validate_digest.py` accepts a below-min count when the banner
+     is present (no `--min` override needed). Leave `coverage_note` unset on normal days.
 7. **On Your Radar** (`pending_topics`, by tag): `[research]` = full card; `[watch]` =
    only if something happened in the last 48h, else skip silently; `[my take]` = lead
    with the user's quoted words, then researched context. OYR cards are **additive** —
@@ -223,6 +249,41 @@ wild-card-last, enforces max 1 wild card, and writes `stories.json` +
   (body = national thesis; State Watch = focus-market detail + concrete move; zero
   repeated facts), apply via `overrides`, re-run assemble.
 
+### Style pass (AI-writing cleanup) — between assemble and build
+
+All reader-facing prose goes through the **avoid-ai-writing** rules, which ship in this
+project as `$PROJECT/avoid-ai-writing.md` (about 150 KB — **never read it into your own
+context**, never inject it into the topic agents' prompts).
+
+1. **Text you author yourself** (`framing`, `coverage_note`, `overrides`, OYR `inline`
+   cards): write it plainly the first time — no significance inflation, stock transitions,
+   aphorism or "not X but Y" formulas, stacked hedges, promotional adjectives, or filler.
+2. **Agent-written text** (headlines, toc_hooks, bodies, regional/divergence/state_watch
+   text): after `assemble_stories.py` succeeds, launch **one** Agent (general-purpose) with
+   this prompt, substituting the real absolute paths and today's date:
+
+   > Read `$PROJECT/avoid-ai-writing.md` and follow it in **edit** mode, default voice,
+   > to clean AI writing patterns out of the reader-facing prose in
+   > `$PROJECT/_pipeline/state/YYYY-MM-DD/stories.json`. Edit only these string fields:
+   > `headline`, `toc_hook`, each `body` paragraph, `framing`, `coverage_note`,
+   > `update_badge`, and the text of `regional`, `divergence` and `state_watch` entries.
+   > Make minimal, targeted edits and leave clean passages untouched. **Source fidelity is
+   > absolute:** do not add, remove or change any number, date, name, attribution, hedge
+   > that signals uncertainty, "per <outlet>" qualifier, or the Update/Wild Card framing.
+   > Do not touch `id`, `category`, `sources`, `urls`, `figure`, `oyr`, `wildcard`, any
+   > quoted material, or the JSON structure. Write the file back as valid JSON
+   > (`ensure_ascii=False`). If you change a story's `headline`, make the same change to
+   > that `id` in `history-entries.json` in the same folder. Reply with one line: how many
+   > fields changed.
+
+3. **Verify (deterministic, in the same command run):** the set of digits-and-percent
+   tokens and the `sources`/`urls` of every story must be identical to the pre-pass
+   `stories.json`. Take a copy first (`cp stories.json stories.pre-style.json`), and after
+   the pass compare with a short python check. If any number or source differs, or the JSON
+   no longer parses, restore the `.pre-style` copy and ship un-cleaned — log it, never
+   block the digest on the style pass. If the Agent errors or times out, skip it (one
+   attempt only) and log it.
+
 Build and validate:
 ```bash
 python3 "$PROJECT/_pipeline/build_digest.py" \
@@ -234,7 +295,7 @@ python3 "$PROJECT/_pipeline/validate_digest.py" \
 Validation checks the regular-card count against `config.story_count` (OYR + wild card
 excluded, max 1 wild card), TOC anchors, category values, the feedback script,
 `DIGEST_DATE`, and — when figures are enabled — the figure count, accessible names, and
-that no `<img>` tag reached the page.
+that no img tag reached the page.
 
 Figure caps are enforced at render time, not by you: a figure that fails validation or
 exceeds `config.figures.max_per_digest` is dropped and reported in `figures_rejected`.
@@ -266,7 +327,7 @@ the fallback.
    `state/.../intake-log.md` (the mechanical tables are pre-written — do not re-type
    them), then append only the editorial sections: resume point if any, per-agent
    outcomes (first try / retried / dropped), your selection decisions with reasons,
-   which wild-card candidate won and which 👍/👎 entries influenced it (or why none
+   style-pass outcome (fields changed / skipped / restored), which wild-card candidate won and which 👍/👎 entries influenced it (or why none
    shipped), validation result, fallbacks taken.
 
    **Figures (only if `config.figures.enabled`).** `build_digest.py` reports
@@ -305,7 +366,10 @@ the fallback.
   deleting — 0-byte artifacts count as absent.
 - **Agent blips** get exactly one in-run re-launch with a reduced budget
   (`config.agent_retry`), then the topic is dropped gracefully. Never infinite-retry,
-  never abort the run for one agent.
+  never abort the run for one agent. Separately, when >= `agent_retry.empty_wave.trigger_min_empty_topics`
+  core topics return `no_qualifying_story`, each gets ONE expanded-budget relaunch
+  (degraded-search recovery). A below-`min` digest ships with a `coverage_note` banner,
+  never with filler.
 - Dedup uses `date` (never `date_shown`), 30-day window; injected lists are capped
   (`dedup_inject_cap`) but intake checks the FULL window — capping never weakens dedup.
 - Dedup entries are **framing ground truth**: never ship a story that reverses an
@@ -333,6 +397,10 @@ the fallback.
   👍 history into the wild-card prompt.
 - HTML is assembled by `build_digest.py` from `template.html` only; the feedback
   script block + `DIGEST_DATE` are template-guaranteed; validate confirms.
+- **Style pass:** all reader-facing text is cleaned with `avoid-ai-writing.md` (edit mode,
+  one Agent, between assemble and build). It may never alter numbers, dates, names,
+  attributions, sources or URLs; the deterministic check restores the pre-pass file on any
+  difference. A failed style pass is a run-log line, never a build failure.
 - Surface the digest via `present_files`; PRE-PHASE 0 guard semantics (0a exit 100 =
   present + stop, no lock; 0b exit 101 = stop without releasing; otherwise always
   release last — the lock is released by overwriting, never deleting, `.run.lock`).
