@@ -65,3 +65,6 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# --- Local backups made before pipeline edits ---
+*.bak-*
