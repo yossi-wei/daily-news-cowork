@@ -126,6 +126,15 @@
     "Nature",
     "IEEE Spectrum"
   ],
+  "_topic_sources_comment": "Optional. Extra sources handed only to the named topic's agent, keyed by topic slug. Layered on top of official_sources + supplemental_sources, which every agent still receives. A topic absent from this map behaves exactly as it did before this key existed, so leaving it out is fine. Useful when one beat has trade press the other topics should not spend search budget on. A state-watch topic listed here uses these instead of its default real_estate_sources list.",
+  "topic_sources": {
+    "tech": [
+      "Ars Technica",
+      "The Register",
+      "Techmeme (DISCOVERY ONLY -- find the story here, then cite the originating outlet; never cite the aggregator itself)",
+      "PRIMARY: vendor engineering blogs, arXiv, standards-body drafts"
+    ]
+  },
   "websearch_regional_allowlist": {
     "middle_east_south_asia": [
       "arabnews.com",

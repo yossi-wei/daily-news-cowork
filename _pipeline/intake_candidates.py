@@ -368,9 +368,17 @@ def candidate_url_keys(cand):
 # collapses those known variants so old entries dedup correctly. Categories not listed
 # here pass through UNCHANGED (see canon_category), so any topic set a user configures
 # works without touching this map. Valid topics come from config.topics at run time.
+# 2026-08-19: AI aliases retargeted from "AI & Tech" to "AI Industry" when that topic
+# was renamed and split into two lanes (ai + ai-build). Must stay in lockstep with
+# CATEGORY_ALIASES in build_context.py -- if the two maps disagree, the same story lands
+# in different buckets on the prompt side and the intake side, and the same_category
+# flag on a history match goes wrong.
 HISTORY_CATEGORY_ALIASES = {
-    "ai": "AI & Tech", "ai & tech": "AI & Tech", "ai and tech": "AI & Tech",
-    "tech": "AI & Tech", "middle east": "Middle East", "space": "Space",
+    "ai": "AI Industry", "ai & tech": "AI Industry", "ai and tech": "AI Industry",
+    "tech": "AI Industry", "ai industry": "AI Industry",
+    "ai build": "AI Build", "ai-build": "AI Build",
+    "ai observability": "AI Observability", "ai-observability": "AI Observability",
+    "middle east": "Middle East", "space": "Space",
     "quantum": "Quantum", "real estate": "Real Estate", "on your radar": "On Your Radar",
 }
 
@@ -605,6 +613,7 @@ def main():
                 "has_regional": bool(cand.get("regional")),
                 "has_divergence": bool(cand.get("divergence")),
                 "has_state_watch": bool(cand.get("state_watch")),
+                "has_figure": bool(cand.get("figure")),
                 **scr,
             })
 

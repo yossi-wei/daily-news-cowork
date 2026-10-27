@@ -14,6 +14,8 @@ SELECTION JSON shape (read from --in):
   "date": "YYYY-MM-DD",                 # required
   "framing": "2-3 sentence editor's note",
   "source_count": "18+",                # optional
+  "coverage_note": "…",                 # optional; set ONLY when regular stories < story_count.min
+                                        #   -- rendered as an amber "Reduced coverage today" banner
   "stories": [
     {                                    # a picked agent candidate:
       "pick": "middle-east-c1",          #   candidate id from the intake triage
@@ -238,6 +240,8 @@ def main():
            "stories": stories}
     if sel.get("source_count"):
         out["source_count"] = sel["source_count"]
+    if sel.get("coverage_note"):
+        out["coverage_note"] = sel["coverage_note"]
 
     for path, payload in ((out_stories, out), (out_history, history_entries)):
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)

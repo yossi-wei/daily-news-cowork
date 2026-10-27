@@ -61,6 +61,29 @@ it as unverified. **Every URL must be a deep link to the specific dated article*
 (slug/date/id in the path) — never a domain root or section landing page. Populate
 `primary_source_url` where one exists; set `source_quality` honestly.
 
+## No claim without a factual basis (mandatory, applies everywhere in your return)
+
+Every factual assertion, comparison, or directional judgment in `body`, `toc_hook`,
+`regional`, `divergence`, and `state_watch` must trace to something you actually found —
+a source you read, or a number/fact stated elsewhere in the same candidate. This bars a
+specific failure mode: reasoning by analogy or geographic proximity and presenting the
+conclusion as if it were researched. Concretely:
+
+- **Do not infer a specific market's conditions from a neighboring or "similar" market's
+  data.** "St. John is near Chicago's exurbs, so it's probably tight like Cook County" is
+  a guess wearing the clothes of a finding — it is not backed by any St. John-specific
+  source, and it can be flatly wrong (a reader with ground-level knowledge of that exact
+  market has already caught this once). If you have no source for the specific place
+  named, say so plainly — "no [topic]-specific data found for St. John; treat the
+  Chicago-exurb comparison below as an unverified guess" or, per the enrichment rules,
+  state that the story doesn't reach that market at all — never state the guess as a
+  finding.
+- **Do not manufacture specificity.** A county name, a percentage, or a comparison to
+  another metro that isn't backed by something you read is worse than omitting it —
+  false precision reads as authoritative and is harder for the reader to catch than an
+  admitted gap.
+- **When you are extrapolating rather than reporting, say so in the text itself** — "likely," "probably tracks," or an explicit "no local data" note — rather than writing the extrapolation in the same flat declarative voice as a sourced fact.
+
 ## Tiers
 
 - **A — must include:** law signed/passed, landmark court ruling, significant regulatory

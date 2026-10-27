@@ -489,6 +489,7 @@ def main():
         .replace("__TITLE_DATE__", title_date)
         .replace("__HEADER_DATE__", header_date)
         .replace("__HEADER_SUB__", sub)
+        .replace("__COVERAGE_NOTE__", (f'<div class="coverage-note"><strong>Reduced coverage today.</strong> {esc(data["coverage_note"])}</div>\n    ' if data.get("coverage_note") else ""))
         .replace("__INTRO_FRAMING__", data.get("framing", ""))
         .replace("__TOC__", toc_html)
         .replace("__OYR_SECTION__", oyr_section)

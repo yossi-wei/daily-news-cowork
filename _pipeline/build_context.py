@@ -88,11 +88,23 @@ def resolve_inject_cap(folder, arg, warnings):
 
 # Canonical topic categories the digest covers. History data is messy, so map
 # every observed variant onto one canonical label.
+#
+# 2026-08-19: the "AI & Tech" topic was renamed "AI Industry" and a second lane,
+# "AI Build", was added. The AI aliases point at the NEW label on purpose -- the
+# injected dedup list is bucketed by canonical category, so leaving them pointed at
+# "AI & Tech" would have handed the renamed agent an empty 30-day history and let it
+# re-cover stories it already ran. "space" stays mapped even though the topic was
+# dropped, so archived Space entries still normalize cleanly.
 CATEGORY_ALIASES = {
-    "ai": "AI & Tech",
-    "ai & tech": "AI & Tech",
-    "ai and tech": "AI & Tech",
-    "tech": "AI & Tech",
+    "ai": "AI Industry",
+    "ai & tech": "AI Industry",
+    "ai and tech": "AI Industry",
+    "tech": "AI Industry",
+    "ai industry": "AI Industry",
+    "ai build": "AI Build",
+    "ai-build": "AI Build",
+    "ai observability": "AI Observability",
+    "ai-observability": "AI Observability",
     "middle east": "Middle East",
     "space": "Space",
     "quantum": "Quantum",
@@ -234,9 +246,16 @@ def _sources_block(cfg, topic):
     supplemental = cfg.get("supplemental_sources", [])
     parts.append("Official: " + ", ".join(official))
     parts.append("Supplemental: " + ", ".join(supplemental))
+    # Per-topic sources, keyed by slug (config.topic_sources). Additive: a topic that
+    # is not in the map gets exactly what it got before this existed. Checked ahead of
+    # the state-watch branch so a state-watch topic listed here overrides its default
+    # real_estate_sources list rather than receiving both.
+    topic_srcs = (cfg.get("topic_sources") or {}).get(topic.get("slug"))
+    if topic_srcs:
+        parts.append("Topic-specific sources: " + ", ".join(topic_srcs))
     if topic.get("enrichment") == "state-watch":
         re_sources = cfg.get("real_estate_sources")
-        if re_sources:
+        if re_sources and not topic_srcs:
             parts.append("Topic-specific sources: " + ", ".join(re_sources))
         focus = cfg.get("focus_states", [])
         if focus:

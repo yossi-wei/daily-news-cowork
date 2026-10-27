@@ -17,6 +17,13 @@ __FOCUS_MARKETS__
 - **If the story doesn't reach a followed market, say so briefly** rather than
   substituting a different one — e.g. "the flagged counties are elsewhere in the state —
   no read-through to the reader's market." That is more useful than a generic state take.
+- **Never infer a followed market's conditions from a nearby or "comparable" market
+  instead of real data on that market.** "St. John, closer to Chicago's exurbs, should be
+  underwritten more like Cook County" is exactly the failure this bans — a guess by
+  proximity, stated as a finding, with nothing about St. John itself behind it. If you
+  found no data specific to the followed market, that itself is the callout: say plainly
+  that you found no local data on this point, rather than substituting an analogy dressed
+  up as a fact.
 - **No overlap with the body.** No fact, figure, or place name may appear in both. If
   the body cites a county or a number, the State Watch on that state must go one level
   deeper (the followed market, or a local detail the body didn't give) **or** switch

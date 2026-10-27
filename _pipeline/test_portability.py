@@ -158,12 +158,21 @@ class TestConfigKeysExist(unittest.TestCase):
 
     def test_new_keys_documented_in_example(self):
         for key in ("feedback_filename", "agent_candidates_per_topic",
-                    "focus_state_tags", "story_count"):
+                    "focus_state_tags", "story_count", "topic_sources"):
             self.assertIn(key, self.example, f"{key} missing from config.example.json")
 
     def test_new_keys_have_explanatory_comments(self):
         self.assertIn("_agent_candidates_per_topic_comment", self.example)
         self.assertIn("_focus_state_tags_comment", self.example)
+        self.assertIn("_topic_sources_comment", self.example)
+
+    def test_topic_sources_keys_are_real_slugs(self):
+        """A topic_sources entry keyed by a slug no topic uses is silently dead --
+        the agent never sees those sources and nothing warns about it."""
+        slugs = {t.get("slug") for t in self.example.get("topics", [])}
+        for slug in self.example.get("topic_sources", {}):
+            self.assertIn(slug, slugs,
+                          f"topic_sources key {slug!r} matches no topic slug")
 
     def test_example_tags_cover_example_states(self):
         for state in self.example.get("focus_states", []):

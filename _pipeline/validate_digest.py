@@ -167,7 +167,9 @@ def main():
     notes.append(f"regular story cards: {n_regular}; on-your-radar cards: {len(oyr_cards)}; "
                  f"wild-card cards: {len(wildcard_cards)}")
     notes.append(f"allowed regular-card range [{count_min},{count_max}] from {count_src}")
-    if not (count_min <= n_regular <= count_max):
+    if n_regular < count_min and 'class="coverage-note"' in html and n_regular >= 1:
+        notes.append(f"regular story count {n_regular} below min {count_min} -- accepted because the digest carries a coverage-note banner")
+    elif not (count_min <= n_regular <= count_max):
         problems.append(f"regular story count {n_regular} outside [{count_min},{count_max}]")
     if len(wildcard_cards) > 1:
         problems.append(f"{len(wildcard_cards)} wild-card cards found; at most 1 allowed")
